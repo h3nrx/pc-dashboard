@@ -312,21 +312,22 @@ async function loadAutostart() {
 }
 
 /* ---------- themes ---------- */
-const THEME_ICON = { startup: "i-monitor", saver: "i-moon", icons: "i-grid", cursor: "i-cursor", folders: "i-folder", spotify: "i-music", discord: "i-chat" };
-function renderThemes(list) {
+const THEME_ICON = { startup: "i-monitor", saver: "i-moon", icons: "i-grid", cursor: "i-cursor", discord: "i-chat" };
+function renderThemes(all) {
+  const list = all.filter((t) => t.available);      // only what is really on this PC
   const on = list.filter((t) => t.on).length;
   $("#t-themes").textContent = `${on} of ${list.length}`;
   $("#t-themes-s").textContent = "turned on";
   $("#theme-counts").innerHTML = `<span class="on">${on} on</span><span>${list.length - on} off</span>`;
   $("#theme-grid").innerHTML = list.map((t) => `
-    <div class="row theme ${t.on ? "is-on" : ""} ${t.available ? "" : "off"}">
+    <div class="row theme ${t.on ? "is-on" : ""}">
       <svg class="ico"><use href="#${THEME_ICON[t.id] || "i-spark"}"/></svg>
       <div class="main">
-        <div class="name">${esc(t.name)}${t.available ? "" : ` <span class="badge sys">Not installed</span>`}</div>
+        <div class="name">${esc(t.name)}</div>
         <div class="sub">${esc(t.desc)}</div>
       </div>
-      <button class="sw ${t.on ? "on" : ""}" data-id="${t.id}" ${t.available ? "" : "disabled"} aria-label="on/off"></button>
-    </div>`).join("");
+      <button class="sw ${t.on ? "on" : ""}" data-id="${t.id}" aria-label="on/off"></button>
+    </div>`).join("") || `<div class="empty">${icon("i-spark")}No desktop themes on this PC.</div>`;
   $("#theme-grid").querySelectorAll(".sw").forEach((s) => (s.onclick = async () => {
     const want = !s.classList.contains("on");
     s.classList.add("busy");

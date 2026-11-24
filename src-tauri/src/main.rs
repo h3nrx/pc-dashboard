@@ -597,7 +597,6 @@ fn task_on(name: &str) -> Option<bool> {
     Some(!(out.contains("Deaktiviert") || out.contains("Disabled")))
 }
 
-fn spicetify() -> PathBuf { local().join(r"spicetify\spicetify.exe") }
 fn vencord_settings() -> PathBuf { roaming().join(r"Vencord\settings\settings.json") }
 const DISCORD_THEME: &str = "h3nrx-chrome.theme.css";
 
@@ -607,10 +606,6 @@ fn theme_list() -> Vec<Theme> {
 
     let cursor = RegKey::predef(HKEY_CURRENT_USER).open_subkey(r"Control Panel\Cursors").ok().filter(|_| b.join(r"h3nrx Mauszeiger\mauszeiger.ps1").exists())
         .map(|k| k.get_value::<String, _>("").unwrap_or_default() == "h3nrx");
-    let folders = fs::read(b.join(r"h3nrx Startbildschirm\desktop.ini")).ok()
-        .map(|d| { let u: Vec<u16> = d.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect(); String::from_utf16_lossy(&u).contains("h3nrx-ordner-icons") })
-        .or(Some(false)).filter(|_| b.join(r"h3nrx Ordner-Icons\ordner-icons.ps1").exists());
-    let spotify = if spicetify().exists() && roaming().join(r"spicetify\Themes\h3nrx").is_dir() { Some(roaming().join(r"Spotify\Apps\xpui").is_dir()) } else { None };
     let discord = fs::read_to_string(vencord_settings()).ok().filter(|_| roaming().join(r"Vencord\themes").join(DISCORD_THEME).exists()).and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
         .map(|v| v["enabledThemes"].as_array().map(|a| a.iter().any(|x| x == DISCORD_THEME)).unwrap_or(false));
 
@@ -619,8 +614,6 @@ fn theme_list() -> Vec<Theme> {
         t("saver", "Screensaver", "F6 toggles it, every other key is locked", task_on("h3nrx-screensaver"), ""),
         t("icons", "Taskbar icons", "Chrome icons for Discord, Spotify, Chrome …", task_on("h3nrx-icons"), ""),
         t("cursor", "Cursors", "Chrome pointers with loading animation", cursor, ""),
-        t("folders", "Folder icons", "Custom chrome icons in ALL IN HERE", folders, ""),
-        t("spotify", "Spotify theme", "Grey with chrome, via Spicetify", spotify, "Spotify restarts"),
         t("discord", "Discord theme", "Glass with chrome accents, via Vencord", discord, "Restart Discord to apply"),
     ]
 }
@@ -659,16 +652,6 @@ async fn theme_set(id: String, on: bool) -> Result<Vec<Theme>, String> {
             }
             "icons" => { ps_file(&b.join(r"h3nrx Taskbar Icons\taskbar-icons.ps1"), &["-Mode", mode])?; }
             "cursor" => { ps_file(&b.join(r"h3nrx Mauszeiger\mauszeiger.ps1"), &[mode])?; }
-            "folders" => { ps_file(&b.join(r"h3nrx Ordner-Icons\ordner-icons.ps1"), &[mode])?; }
-            "spotify" => {
-                let s = spicetify(); let s = s.to_str().unwrap_or_default();
-                if on {
-                    run(s, &["config", "current_theme", "h3nrx", "color_scheme", "base", "inject_css", "1", "replace_colors", "1"])?;
-                    if run(s, &["backup", "apply"]).is_err() { run(s, &["apply"])?; }
-                } else {
-                    run(s, &["restore"])?;
-                }
-            }
             "discord" => set_vencord_theme(on)?,
             _ => return Err("unknown".into()),
         }

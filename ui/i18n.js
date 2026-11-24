@@ -39,10 +39,10 @@ const DE = {
   // themes
   "Your desktop looks": "Deine Desktop-Looks", "Switch any of them on or off. Nothing gets deleted.": "Schalte alles einzeln an oder aus. Nichts wird gelöscht.",
   "Turned on": "Eingeschaltet", "Turned off": "Ausgeschaltet", "That didn't work": "Das hat nicht geklappt",
-  "Boot screen": "Startbildschirm", "Screensaver": "Bildschirmschoner", "Taskbar icons": "Taskleisten-Icons", "Cursors": "Mauszeiger", "Folder icons": "Ordner-Icons", "Spotify theme": "Spotify-Theme", "Discord theme": "Discord-Theme",
+  "Boot screen": "Startbildschirm", "Screensaver": "Bildschirmschoner", "Taskbar icons": "Taskleisten-Icons", "Cursors": "Mauszeiger", "Discord theme": "Discord-Theme",
   "Chrome loading bar right after login": "Chrom-Ladebalken direkt nach der Anmeldung", "F6 toggles it, every other key is locked": "F6 schaltet ihn um, alle anderen Tasten sind gesperrt",
   "Chrome icons for Discord, Spotify, Chrome …": "Chrom-Icons für Discord, Spotify, Chrome …", "Chrome pointers with loading animation": "Chrom-Zeiger mit Ladeanimation",
-  "Custom chrome icons in ALL IN HERE": "Eigene Chrom-Icons in ALL IN HERE", "Grey with chrome, via Spicetify": "Grau mit Chrom, über Spicetify", "Glass with chrome accents, via Vencord": "Glas mit Chrom-Akzenten, über Vencord",
+  "No desktop themes on this PC.": "Keine Desktop-Themes auf diesem PC.", "Glass with chrome accents, via Vencord": "Glas mit Chrom-Akzenten, über Vencord",
   // clips
   "Your whole screen, saved whenever something good happens": "Dein ganzer Bildschirm, gespeichert wenn was Gutes passiert",
   "Clip": "Clip", "Recording": "Aufnahme", "Clipping is on": "Clippen ist an", "Clipping is off": "Clippen ist aus", "Long recording": "Lange Aufzeichnung",
@@ -84,7 +84,7 @@ const DE = {
 };
 const DE_RULES = [
   [/^(V[\d.]+) installed$/, "$1 installiert"], [/^(V[\d.]+) is available$/, "$1 ist verfügbar"], [/^(V[\d.]+) is up to date$/, "$1 ist aktuell"],
-  [/^Downloading recorder … (\d+)%$/, "Lädt den Rekorder … $1 %"], [/^Last (.+)$/, "Letzte $1"], [/^The app folder is write-protected (.+)$/, "Der App-Ordner ist schreibgeschützt $1"],
+  [/^Settings could not be saved (.+)$/, "Einstellungen konnten nicht gespeichert werden $1"], [/^Downloading recorder … (\d+)%$/, "Lädt den Rekorder … $1 %"], [/^Last (.+)$/, "Letzte $1"], [/^The app folder is write-protected (.+)$/, "Der App-Ordner ist schreibgeschützt $1"],
   [/^(\d+) on$/, "$1 an"], [/^(\d+) off$/, "$1 aus"], [/^(\d+) leftover$/, "$1 Reste"], [/^(\d+) of (\d+)$/, "$1 von $2"],
   [/^(\d+) turned off(?: · (\d+) leftover)?$/, (_, a, b) => `${a} ausgeschaltet` + (b ? ` · ${b} Reste` : "")],
   [/^(.+ [GM]B) of it risk-free$/, "davon $1 ohne Risiko"], [/^(.+ [GM]B) of (.+ [GM]B)$/, "$1 von $2"],

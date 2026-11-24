@@ -68,9 +68,9 @@ fn st<R>(f: impl FnOnce(&mut State) -> R) -> R {
     }))
 }
 pub fn data() -> PathBuf {
-    // settings of the first version stay where they are
-    let old = local().join("h3nrx-control");
-    if old.is_dir() { old } else { local().join("pc-dashboard") }
+    // the first version used another folder; it only counts while there is nothing newer
+    let (new, old) = (local().join("pc-dashboard"), local().join("h3nrx-control"));
+    if !new.join("clips.json").exists() && old.join("clips.json").exists() { old } else { new }
 }
 fn cfg_path() -> PathBuf { data().join("clips.json") }
 fn buffer() -> PathBuf { data().join("clip-buffer") }
@@ -90,11 +90,19 @@ fn ffmpeg() -> PathBuf {
     let near = std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.join("ffmpeg.exe"))).unwrap_or_default();
     if near.exists() { near } else { data().join("ffmpeg.exe") }
 }
-fn save_cfg() {
+fn save_cfg() -> Result<(), String> {
     let text = st(|s| serde_json::to_string_pretty(&s.cfg).unwrap_or_default());
-    let _ = fs::create_dir_all(data());
-    let tmp = data().join("clips.json.tmp");
-    if fs::write(&tmp, text).is_ok() { let _ = fs::rename(tmp, cfg_path()); }
+    let path = cfg_path();
+    let tmp = path.with_extension("json.tmp");
+    let write = || -> std::io::Result<()> {
+        fs::create_dir_all(data())?;
+        let mut f = fs::File::create(&tmp)?;
+        std::io::Write::write_all(&mut f, text.as_bytes())?;
+        f.sync_all()?;      // really on the disk before the old file is replaced
+        drop(f);
+        fs::rename(&tmp, &path)
+    };
+    write().map_err(|e| format!("Settings could not be saved ({e})"))
 }
 fn emit(kind: &str, text: &str) {
     if let Some(a) = APP.lock().unwrap_or_else(|e| e.into_inner()).as_ref() { let _ = a.emit("clips", (kind, text)); }
@@ -267,7 +275,7 @@ fn supervise() {
                     continue;
                 }
                 if newest.is_some() {
-                    if fails > 0 || st(|x| !x.error.is_empty()) { fails = 0; st(|x| x.error.clear()); save_cfg(); emit("state", ""); }
+                    if fails > 0 || st(|x| !x.error.is_empty()) { fails = 0; st(|x| x.error.clear()); let _ = save_cfg(); emit("state", ""); }
                     // forget what is too old, unless a recording still needs it
                     if SAVING.load(SeqCst) == 0 {
                         let keep = st(|x| { let k = s.now() - x.cfg.secs as f64 - 8.0; x.rec.map_or(k, |r| k.min(r - 2.0)) });
@@ -537,10 +545,11 @@ pub async fn clips_config(patch: serde_json::Map<String, serde_json::Value>) -> 
         new.hidden.sort(); new.hidden.dedup();
         let restart = (old.mic, old.fps, old.quality) != (new.mic, new.fps, new.quality);
         let (session, rec) = st(|s| { s.cfg = new; (s.session.clone(), s.rec_wish) });
-        save_cfg();
+        let saved = save_cfg();
         // these only apply to a fresh buffer (never in the middle of a recording)
         if let (true, false, Some(s)) = (restart, rec, session) { if SAVING.load(SeqCst) == 0 { shut(&s); } }
         rebind();
+        saved?;
         Ok(state_now())
     }).await
 }
@@ -561,7 +570,7 @@ pub async fn clips_folder(app: AppHandle) -> Result<ClipState, String> {
             if !p.is_dir() { return Err("That folder doesn't exist anymore".to_string()); }
             let _ = app.asset_protocol_scope().allow_directory(&p, false);
             st(|s| s.cfg.folder = p.to_string_lossy().to_string());
-            save_cfg();
+            save_cfg()?;
         }
         Ok(state_now())
     }).await
