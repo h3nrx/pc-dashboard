@@ -1,0 +1,9 @@
+*.exe
+*.old
+*.new
+desktop.ini
+dist/
+target/
+src-tauri/gen/
+__pycache__/
+settings.json

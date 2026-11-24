@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PC Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fafafc"/><stop offset=".38" stop-color="#c4c7cd"/>
+      <stop offset=".5" stop-color="#6a6d74"/><stop offset=".66" stop-color="#d6d9de"/><stop offset="1" stop-color="#9a9da5"/>
+    </linearGradient>
+    <linearGradient id="chromeH" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9a9da5"/><stop offset=".5" stop-color="#f4f5f7"/><stop offset="1" stop-color="#c4c7cd"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e6e8ec" stop-opacity=".22"/><stop offset="1" stop-color="#e6e8ec" stop-opacity="0"/>
+    </linearGradient>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5A1.5 1.5 0 0 1 3.5 19z"/></symbol>
+    <symbol id="i-disk" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M3.5 14h17"/><circle cx="16.5" cy="16.6" r=".6"/><circle cx="13.8" cy="16.6" r=".6"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3.5v8"/><path d="M7.2 6.6a7 7 0 1 0 9.6 0"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3c.6 4.8 3.2 7.4 9 9-5.8 1.6-8.4 4.2-9 9-.6-4.8-3.2-7.4-9-9 5.8-1.6 8.4-4.2 9-9z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4.2l2 2H19a1.5 1.5 0 0 1 1.5 1.5V17A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V5h5v2M6.5 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4l.8-12"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-min" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+    <symbol id="i-max" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.3-3 7.6-7 9-4-1.4-7-4.7-7-9V6z"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="12" rx="2.5"/><path d="M9 20h6M12 16.5V20"/><path d="M8 12.5h4.5"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></symbol>
+    <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5.5 4 18 11.2l-5.6 1.4-2.6 5.6z"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-7l-4.5 3.5v-3.5H5A1.5 1.5 0 0 1 3.5 15V7A1.5 1.5 0 0 1 5 5.5z"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9.5 3.5v3M14.5 3.5v3M9.5 17.5v3M14.5 17.5v3M3.5 9.5h3M3.5 14.5h3M17.5 9.5h3M17.5 14.5h3"/></symbol>
+    <symbol id="i-ram" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="9" rx="1.8"/><path d="M7 10.5v2M10.5 10.5v2M14 10.5v2M17.5 10.5v2M6 16v2.5M18 16v2.5"/></symbol>
+    <symbol id="i-gpu" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="11" rx="2"/><circle cx="9" cy="11.5" r="3"/><circle cx="16" cy="11.5" r="1.6"/><path d="M5 17v2.5M8 17v2.5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16.5 6.5l2.5 2.5M14 9l2 2"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M14 4.5h5.5V10M19.5 4.5 11 13M17 14v4a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 5 18V9a1.5 1.5 0 0 1 1.5-1.5h4"/></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="m10 9.2 5 2.8-5 2.8z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="m5 19 14-14"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M5.5 15.5A1 1 0 0 1 4.5 14.5v-8a2 2 0 0 1 2-2h8a1 1 0 0 1 1 1"/></symbol>
+    <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<div class="bgimg"></div>
+<div class="ambient"><i></i><i></i><i></i></div>
+
+<canvas id="fx" width="1180" height="760"></canvas>
+<div class="lights" id="lights"></div>
+
+<div class="app">
+  <aside class="side" data-tauri-drag-region>
+    <div class="brand" data-tauri-drag-region>
+      <div data-tauri-drag-region><b id="brand"></b><span>Dashboard</span></div>
+    </div>
+    <nav>
+      <span class="nav-ind" id="nav-ind"></span>
+      <button class="nav active" data-page="overview"><svg><use href="#i-home"/></svg>Overview</button>
+      <button class="nav" data-page="clips"><svg><use href="#i-film"/></svg>Clips<i class="nav-rec" id="nav-rec"></i></button>
+      <button class="nav" data-page="storage"><svg><use href="#i-disk"/></svg>Storage</button>
+      <button class="nav" data-page="autostart"><svg><use href="#i-power"/></svg>Startup apps</button>
+      <button class="nav" data-page="themes"><svg><use href="#i-spark"/></svg>Themes</button>
+      <button class="nav" data-page="settings"><svg><use href="#i-gear"/></svg>Settings<i class="nav-rec" id="nav-upd"></i></button>
+    </nav>
+    <div class="side-foot" data-tauri-drag-region>
+      <div class="up"><svg><use href="#i-clock"/></svg><span>Uptime</span><b id="uptime">–</b></div>
+    </div>
+  </aside>
+
+  <main>
+    <header class="bar" data-tauri-drag-region>
+      <div data-tauri-drag-region>
+        <h1 id="title" data-tauri-drag-region>Overview</h1>
+        <p id="subtitle" data-tauri-drag-region></p>
+      </div>
+      <div class="win">
+        <button id="w-min" title="Minimize"><svg><use href="#i-min"/></svg></button>
+        <button id="w-close" class="x" title="Close"><svg><use href="#i-close"/></svg></button>
+      </div>
+    </header>
+
+    <div class="scroll" id="scroll">
+      <!-- OVERVIEW -->
+      <section class="page show" id="overview">
+        <div class="top-row">
+          <div class="card drive">
+            <div class="s-top"><svg><use href="#i-disk"/></svg><span>Drive C:</span></div>
+            <div class="ring">
+              <svg viewBox="0 0 160 160">
+                <defs><mask id="ringmask"><circle id="ringmask-c" cx="80" cy="80" r="66" stroke="#fff" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="414.7" stroke-dashoffset="414.7"/></mask></defs>
+                <circle class="track" cx="80" cy="80" r="66"/>
+                <circle class="fill" id="ring" cx="80" cy="80" r="66"/>
+              </svg>
+              <div class="ring-in"><b id="free">–</b><span>free</span></div>
+            </div>
+            <div class="legend"><span><i class="dot a"></i><b id="used">–</b> used</span><span><i class="dot b"></i><b id="total">–</b> total</span></div>
+          </div>
+
+          <div class="card jarvis" id="jarvis" title="Click to set your API keys">
+            <div class="s-top">
+              <svg><use href="#i-mic"/></svg><span>Jarvis</span>
+              <span class="chip" id="j-chip"><i></i><span>Checking …</span></span>
+              <span class="j-key"><svg><use href="#i-key"/></svg>API keys</span>
+            </div>
+            <div class="j-body">
+              <div class="orb" id="j-orb" title="Hold to talk"><i></i><i></i><i></i><b></b></div>
+              <div class="j-log" id="j-log">
+                <div class="j-line idle" id="j-idle">Hold your forward mouse button and talk.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="live">
+          <div class="card stat" id="s-cpu">
+            <div class="s-top"><svg><use href="#i-cpu"/></svg><span>CPU</span><b class="s-val">–</b></div>
+            <svg class="spark" viewBox="0 0 300 70" preserveAspectRatio="none"><path class="area"/><path class="line"/></svg>
+            <span class="s-sub">Processor load</span>
+          </div>
+          <div class="card stat" id="s-ram">
+            <div class="s-top"><svg><use href="#i-ram"/></svg><span>Memory</span><b class="s-val">–</b></div>
+            <svg class="spark" viewBox="0 0 300 70" preserveAspectRatio="none"><path class="area"/><path class="line"/></svg>
+            <span class="s-sub">–</span>
+          </div>
+          <div class="card stat" id="s-gpu">
+            <div class="s-top"><svg><use href="#i-gpu"/></svg><span>GPU</span><b class="s-val">–</b></div>
+            <svg class="spark" viewBox="0 0 300 70" preserveAspectRatio="none"><path class="area"/><path class="line"/></svg>
+            <span class="s-sub">–</span>
+          </div>
+        </div>
+
+        <div class="tiles">
+          <button class="card tile" data-go="clips" data-alt="themes">
+            <svg class="ti"><use href="#i-film"/></svg>
+            <span class="tl">Clips</span><b id="t-clips">…</b><span class="ts" id="t-clips-s"></span>
+            <svg class="go"><use href="#i-arrow"/></svg>
+          </button>
+          <button class="card tile" data-go="storage">
+            <svg class="ti"><use href="#i-trash"/></svg>
+            <span class="tl">Can be cleaned</span><b id="t-clean">…</b><span class="ts" id="t-clean-s">searching</span>
+            <svg class="go"><use href="#i-arrow"/></svg>
+          </button>
+          <button class="card tile" data-go="autostart">
+            <svg class="ti"><use href="#i-power"/></svg>
+            <span class="tl">Startup apps</span><b id="t-auto">…</b><span class="ts" id="t-auto-s"></span>
+            <svg class="go"><use href="#i-arrow"/></svg>
+          </button>
+          <button class="card tile" data-go="themes">
+            <svg class="ti"><use href="#i-spark"/></svg>
+            <span class="tl">Desktop themes</span><b id="t-themes">…</b><span class="ts" id="t-themes-s"></span>
+            <svg class="go"><use href="#i-arrow"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- CLIPS -->
+      <section class="page" id="clips">
+        <div class="card clipbar">
+          <button class="sw" id="c-on" aria-label="Clipping on/off"></button>
+          <div class="cb-state"><b id="c-title">Clipping is off</b><span id="c-sub">Switch it on to keep the last seconds of your screen.</span></div>
+        </div>
+        <div class="modes">
+          <div class="card mode" id="m-clip">
+            <div class="mo-top"><svg class="mo-ic"><use href="#i-film"/></svg><div class="cb-state"><b><span>Clip</span> <em id="c-lentext"></em></b><span id="c-clipsub">Saves what just happened</span></div></div>
+            <div class="mo-row"><span class="mo-l">Length</span>
+              <input id="c-len" spellcheck="false" autocomplete="off" title="Type a length, like 45, 90s, 2 min or 1:30">
+              <div class="seg" id="c-quick"><button data-s="30">30 s</button><button data-s="60">1 min</button><button data-s="120">2 min</button></div>
+            </div>
+            <div class="mo-row"><span class="mo-l">Hotkey</span><button class="keycap" data-key="hotkey" title="Click, then press the new key. Backspace = no key.">F9</button>
+              <button class="btn chrome" id="c-save" disabled><svg><use href="#i-film"/></svg><span>Save clip</span></button></div>
+          </div>
+          <div class="card mode" id="m-rec">
+            <div class="mo-top"><svg class="mo-ic"><use href="#i-rec"/></svg><div class="cb-state"><b><span>Long recording</span> <em id="c-rectime"></em></b><span id="c-recsub">Records until you stop it</span></div></div>
+            <div class="mo-row last"><span class="mo-l">Hotkey</span><button class="keycap" data-key="rec_hotkey" title="Click, then press the new key. Backspace = no key.">F10</button>
+              <button class="btn" id="c-rec"><svg><use href="#i-rec"/></svg><span>Start recording</span></button></div>
+          </div>
+        </div>
+        <div class="clip-head"><div class="seg" id="c-filter"><button data-f="" class="on">All</button><button data-f="Clip">Clips</button><button data-f="Recording">Recordings</button></div><span id="c-count"></span><button class="lnk" id="c-folder">Open folder<svg><use href="#i-folder"/></svg></button></div>
+        <div class="clip-grid" id="c-grid"><div class="empty"><span class="spin"></span>Loading …</div></div>
+      </section>
+
+      <!-- STORAGE -->
+      <section class="page" id="storage">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Clean up</h3><p>Everything goes to the Recycle Bin, so you can always get it back.</p></div>
+          </div>
+          <div class="list" id="clean-list"><div class="empty"><span class="spin"></span>Looking for junk …</div></div>
+          <div class="card-foot">
+            <span>Selected <b id="sel">0 GB</b></span>
+            <button class="btn chrome" id="clean-btn" disabled><svg><use href="#i-trash"/></svg>Move to Recycle Bin</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Biggest folders</h3><p>What takes up the most space on C:</p></div>
+            <button class="btn" id="scan-btn"><svg><use href="#i-scan"/></svg>Scan</button>
+          </div>
+          <div class="list" id="folder-list"><div class="empty">Hit “Scan”. Takes about a minute.</div></div>
+        </div>
+      </section>
+
+      <!-- STARTUP APPS -->
+      <section class="page" id="autostart">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Starts with Windows</h3><p>Turning something off doesn't delete it, same as in Task Manager.</p></div>
+            <div class="counts" id="auto-counts"></div>
+          </div>
+          <div class="list" id="auto-list"><div class="empty"><span class="spin"></span>Loading …</div></div>
+        </div>
+      </section>
+
+      <!-- THEMES -->
+      <section class="page" id="themes">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Your desktop looks</h3><p>Switch any of them on or off. Nothing gets deleted.</p></div>
+            <div class="counts" id="theme-counts"></div>
+          </div>
+          <div class="list" id="theme-grid"><div class="empty"><span class="spin"></span>Loading …</div></div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="page" id="settings">
+        <div class="card">
+          <div class="card-head"><div><h3>General</h3><p>How the app behaves</p></div></div>
+          <div class="list">
+            <div class="row set"><div class="main"><div class="name">Your name</div><div class="sub">Shown at the top left</div></div><input class="txt" id="s-name" maxlength="20" spellcheck="false" autocomplete="off"></div>
+            <div class="row set"><div class="main"><div class="name">Language</div><div class="sub">Everything in the app, including the tray menu</div></div><div class="seg" id="s-lang"><button data-v="en">English</button><button data-v="de">Deutsch</button></div></div>
+            <div class="row set"><div class="main"><div class="name">Start with Windows</div><div class="sub">Opens by itself when you log in</div></div><button class="sw" id="s-auto" aria-label="on/off"></button></div>
+            <div class="row set"><div class="main"><div class="name">Start in the background</div><div class="sub">At Windows start only the icon next to the clock appears</div></div><button class="sw" data-set="start_hidden" aria-label="on/off"></button></div>
+            <div class="row set"><div class="main"><div class="name">Keep running when closed</div><div class="sub">Otherwise the X quits the app and stops clipping</div></div><button class="sw" data-set="tray" aria-label="on/off"></button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Recording settings</h3><p>For clips and long recordings</p></div></div>
+          <div class="list">
+            <div class="row set"><div class="main"><div class="name">Microphone</div><div class="sub">Records your voice along with the PC sound</div></div><button class="sw" data-set="mic" aria-label="on/off"></button></div>
+            <div class="row set"><div class="main"><div class="name">Sound when saved</div><div class="sub">Short tone, so you know it worked</div></div><button class="sw" data-set="sound" aria-label="on/off"></button></div>
+            <div class="row set"><div class="main"><div class="name">Frames per second</div><div class="sub">60 is smoother, 30 makes smaller files</div></div><div class="seg" data-seg="fps"><button data-v="30">30</button><button data-v="60">60</button></div></div>
+            <div class="row set"><div class="main"><div class="name">Quality</div><div class="sub">Higher looks better but needs more space</div></div><div class="seg" data-seg="quality"><button data-v="0">Small</button><button data-v="1">Normal</button><button data-v="2">High</button></div></div>
+            <div class="row set"><div class="main"><div class="name">Save folder</div><div class="sub" id="s-folder"></div></div><button class="btn" id="s-folder-btn"><svg><use href="#i-folder"/></svg>Change</button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Visible tabs</h3><p>You can also right-click a tab to hide it</p></div></div>
+          <div class="list">
+            <div class="row set"><div class="main"><div class="name">Clips</div><div class="sub">Save and record your screen</div></div><button class="sw" data-show="clips" aria-label="show/hide"></button></div>
+            <div class="row set"><div class="main"><div class="name">Storage</div><div class="sub">Clean up and find big folders</div></div><button class="sw" data-show="storage" aria-label="show/hide"></button></div>
+            <div class="row set"><div class="main"><div class="name">Startup apps</div><div class="sub">What launches with Windows</div></div><button class="sw" data-show="autostart" aria-label="show/hide"></button></div>
+            <div class="row set"><div class="main"><div class="name">Themes</div><div class="sub">Desktop themes found on this PC</div></div><button class="sw" data-show="themes" aria-label="show/hide"></button></div>
+            <div class="row set"><div class="main"><div class="name">Jarvis</div><div class="sub">Voice assistant on the overview</div></div><button class="sw" data-show="jarvis" aria-label="show/hide"></button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Appearance</h3><p>Pick a look for the dashboard</p></div></div>
+          <div class="look-grid" id="look-grid"></div>
+          <div class="list">
+            <div class="row set"><div class="main"><div class="name">Animations</div><div class="sub">Snow, petals, stars and lights</div></div><button class="sw" data-set="fx" aria-label="on/off"></button></div>
+          </div>
+        </div>
+        <div class="card" id="upd">
+          <div class="card-head">
+            <div><h3>Updates</h3><p id="u-sub">Version</p></div>
+            <div class="u-btns"><button class="btn" id="u-check"><svg><use href="#i-scan"/></svg><span>Check</span></button><button class="btn chrome" id="u-go" hidden><svg><use href="#i-down"/></svg><span>Install</span></button></div>
+          </div>
+          <div class="u-bar" id="u-bar" hidden><i></i></div>
+          <div class="u-list" id="u-list"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="modal">
+  <div class="dialog">
+    <h3 id="m-title"></h3>
+    <p id="m-text"></p>
+    <div class="m-list" id="m-list"></div>
+    <div class="m-btns"><button class="btn" id="m-no">Cancel</button><button class="btn chrome" id="m-yes">Yes, do it</button></div>
+  </div>
+</div>
+<div class="modal" id="player">
+  <div class="dialog wide">
+    <video id="p-video" controls playsinline></video>
+    <div class="p-foot">
+      <div class="p-info"><b id="p-name"></b><span id="p-sub"></span></div>
+      <button class="btn" id="p-copy"><svg><use href="#i-copy"/></svg>Copy</button>
+      <button class="btn" id="p-show"><svg><use href="#i-folder"/></svg>Show file</button>
+      <button class="btn" id="p-del"><svg><use href="#i-trash"/></svg>Delete</button>
+      <button class="icon-btn" id="p-close" title="Close"><svg><use href="#i-close"/></svg></button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="keys">
+  <div class="dialog">
+    <h3>Jarvis API keys</h3>
+    <p>Saved only on this PC. Leave a field empty to keep the key you have.</p>
+    <div class="field" id="k-py" hidden><div class="f-top"><label>Python <span>needed for Jarvis</span></label><button class="lnk" data-url="https://www.python.org/downloads/">Download<svg><use href="#i-link"/></svg></button></div></div>
+    <div class="field">
+      <div class="f-top"><label for="k-groq">Groq <span>brain + ears</span></label><button class="lnk" data-url="https://console.groq.com/keys">Get a key<svg><use href="#i-link"/></svg></button></div>
+      <input id="k-groq" type="password" spellcheck="false" autocomplete="off" placeholder="gsk_…">
+    </div>
+    <div class="field">
+      <div class="f-top"><label for="k-eleven">ElevenLabs <span>voice</span></label><button class="lnk" data-url="https://elevenlabs.io/app/settings/api-keys">Get a key<svg><use href="#i-link"/></svg></button></div>
+      <input id="k-eleven" type="password" spellcheck="false" autocomplete="off" placeholder="sk_…">
+    </div>
+    <div class="field">
+      <div class="f-top"><label>Language</label></div>
+      <div class="seg" id="k-lang"><button data-v="en">English</button><button data-v="de">Deutsch</button></div>
+    </div>
+    <div class="m-btns"><button class="btn" id="k-no">Cancel</button><button class="btn chrome" id="k-yes">Save</button></div>
+  </div>
+</div>
+<div class="ctx" id="ctx"></div>
+<div class="toasts" id="toasts"></div>
+
+<script src="i18n.js"></script>
+<script src="look.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
