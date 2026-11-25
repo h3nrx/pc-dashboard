@@ -1,12 +1,10 @@
 """Settings and the bit of HTTP everything here shares.
 
 Nothing is configured in this file. Everything lives in settings.json next to
-it, written by setup.py (start-dashboard.bat offers it). Environment variables
-still win, so you can keep the keys out of any file:
+it, written by the PC Dashboard app. Environment variables still win, so you can keep the keys out of any file:
     setx GROQ_API_KEY "..."      setx ELEVENLABS_API_KEY "..."
 
-settings.json holds your personal keys. Delete it before you pass the folder
-on - setup.py then runs again on the other machine and asks for theirs.
+settings.json holds your personal keys. Never pass it on.
 """
 import json
 import os
@@ -15,25 +13,12 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# Windows' "controlled folder access" (the ransomware protection) stops
-# unknown programs from writing into Documents, Desktop and Pictures - and it
-# does so silently: the write seems to work and the file is gone afterwards.
-# So we keep the settings next to the script where we can, and fall back to
-# the app data folder where we cannot. Whichever exists is the one we read.
-FALLBACK_DIR = os.path.join(os.environ.get("LOCALAPPDATA") or HERE, "MissionControl")
-NEAR = os.path.join(HERE, "settings.json")
-AWAY = os.path.join(FALLBACK_DIR, "settings.json")
+SETTINGS_FILE = os.path.join(HERE, "settings.json")
 
 
 def sources():
-    """Existing settings files, newest first - so the one last written wins
-    even when a blocked save had to move to the fallback folder."""
-    found = [p for p in (NEAR, AWAY) if os.path.exists(p)]
-    found.sort(key=lambda p: os.path.getmtime(p), reverse=True)
-    return found
+    return [SETTINGS_FILE] if os.path.exists(SETTINGS_FILE) else []
 
-
-SETTINGS_FILE = (sources() or [NEAR])[0]
 
 DEFAULTS = {
     "lang": "en",                        # what a fresh install starts in
@@ -80,19 +65,10 @@ def _write(path, merged):
 
 
 def save(data):
-    """Save, falling back to the app data folder if the script folder is
-    protected. Returns (settings, path). Raises only if both fail."""
-    global SETTINGS_FILE
+    """Returns (settings, path)."""
     merged = load()
     merged.update(data)
-    first = Exception("?")
-    for path in (SETTINGS_FILE, AWAY, NEAR):
-        try:
-            SETTINGS_FILE = _write(path, merged)
-            return merged, SETTINGS_FILE
-        except Exception as e:
-            first = first if isinstance(first, OSError) else e
-    raise first
+    return merged, _write(SETTINGS_FILE, merged)
 
 
 def configured():

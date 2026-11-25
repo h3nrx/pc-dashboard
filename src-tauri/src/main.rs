@@ -685,18 +685,13 @@ async fn theme_set(id: String, on: bool) -> Result<Vec<Theme>, String> {
 const JARVIS_PORT: u16 = 8765;
 static JARVIS_OURS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-/// an own Jarvis folder wins; everyone else uses the copy inside the app
-fn jarvis_dir() -> PathBuf {
-    let own = base().join("Jarvis");
-    if own.join("monitor.py").exists() { own } else { clips::data().join("jarvis") }
-}
+fn jarvis_dir() -> PathBuf { clips::data().join("jarvis") }
 const JARVIS_FILES: [(&str, &str); 6] = [
     ("actions.py", include_str!("../jarvis/actions.py")), ("config.py", include_str!("../jarvis/config.py")), ("hotkey.py", include_str!("../jarvis/hotkey.py")),
     ("jarvis.py", include_str!("../jarvis/jarvis.py")), ("monitor.py", include_str!("../jarvis/monitor.py")), ("texts.py", include_str!("../jarvis/texts.py")),
 ];
 fn jarvis_unpack() {
-    let dir = clips::data().join("jarvis");
-    if jarvis_dir() != dir { return; }
+    let dir = jarvis_dir();
     let _ = fs::create_dir_all(&dir);
     for (n, text) in JARVIS_FILES {
         if fs::read_to_string(dir.join(n)).ok().as_deref() != Some(text) { let _ = fs::write(dir.join(n), text); }
@@ -706,22 +701,38 @@ fn has_python() -> bool {
     std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
         .any(|d| d.join("pythonw.exe").exists() || d.join("pyw.exe").exists()) || env_path("WINDIR").join("pyw.exe").exists()
 }
-fn jarvis_near() -> PathBuf { jarvis_dir().join("settings.json") }
-fn jarvis_away() -> PathBuf { local().join(r"MissionControl\settings.json") }
+fn jarvis_file() -> PathBuf { jarvis_dir().join("settings.json") }
 
-/// same rule as Jarvis' config.py: the newest of the two settings files wins
 fn jarvis_settings() -> serde_json::Map<String, serde_json::Value> {
-    let mut found: Vec<(SystemTime, PathBuf)> = [jarvis_near(), jarvis_away()].into_iter()
-        .filter_map(|p| fs::metadata(&p).and_then(|m| m.modified()).ok().map(|t| (t, p)))
-        .collect();
-    found.sort_by(|a, b| b.0.cmp(&a.0));
-    for (_, p) in found {
-        if let Ok(serde_json::Value::Object(m)) = fs::read_to_string(&p).map_err(|_| ())
-            .and_then(|s| serde_json::from_str(s.trim_start_matches('\u{feff}')).map_err(|_| ())) {
-            return m;
-        }
+    match fs::read_to_string(jarvis_file()).ok().and_then(|s| serde_json::from_str(s.trim_start_matches('\u{feff}')).ok()) {
+        Some(serde_json::Value::Object(m)) => m,
+        _ => serde_json::Map::new(),
     }
-    serde_json::Map::new()
+}
+
+/// Versions before 1.3 used three folders in %LOCALAPPDATA%; everything moves into "pc-dashboard" once.
+fn one_folder() {
+    let data = clips::data();
+    // Jarvis: keys, language and talk key
+    let (old, new) = (local().join(r"MissionControl\settings.json"), jarvis_file());
+    let time = |p: &Path| fs::metadata(p).and_then(|m| m.modified()).ok();
+    if old.exists() {
+        let _ = fs::create_dir_all(jarvis_dir());
+        // the newer one is the one that was in use; the old file only goes once the copy is proven
+        let fine = time(&new) >= time(&old) || (fs::copy(&old, &new).is_ok() && fs::read(&old).ok() == fs::read(&new).ok());
+        if fine && fs::remove_file(&old).is_ok() { let _ = fs::remove_dir(old.parent().unwrap()); }      // only if empty
+    }
+    // the window's own browser data
+    let (old, new) = (local().join("com.h3nrx.control"), data.join("webview"));
+    if old.is_dir() {
+        let _ = fs::create_dir_all(&data);
+        for _ in 0..12 {
+            if new.exists() || fs::rename(&old, &new).is_ok() { break; }
+            std::thread::sleep(Duration::from_millis(250));      // the closing old version still holds it
+        }
+        if new.exists() { let _ = fs::remove_dir_all(&old); }
+    }
+    std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", &new);
 }
 
 fn jarvis_up() -> bool {
@@ -797,16 +808,15 @@ async fn jarvis_save(groq: String, eleven: String, lang: String, talk: String) -
         if !e.is_empty() { s.insert("elevenlabs_key".into(), e.into()); }
         if lang == "en" || lang == "de" { s.insert("lang".into(), lang.as_str().into()); }
         let text = serde_json::to_string_pretty(&serde_json::Value::Object(s)).map_err(|e| e.to_string())?;
-        // %LOCALAPPDATA% copy: controlled folder access can silently block writes into Documents
-        let away = jarvis_away();
-        let _ = fs::create_dir_all(away.parent().unwrap());
-        let tmp = away.with_extension("json.tmp");
+        let file = jarvis_file();
+        let _ = fs::create_dir_all(jarvis_dir());
+        let tmp = file.with_extension("json.tmp");
         fs::write(&tmp, &text).map_err(|e| format!("Could not save: {e}"))?;
         if fs::read_to_string(&tmp).ok().as_deref() != Some(text.as_str()) {
             let _ = fs::remove_file(&tmp);
             return Err("Could not save the keys (write was blocked).".into());
         }
-        fs::rename(&tmp, &away).map_err(|e| format!("Could not save: {e}"))?;
+        fs::rename(&tmp, &file).map_err(|e| format!("Could not save: {e}"))?;
         // Jarvis reads its keys at start, so restart it
         let was_ours = JARVIS_OURS.load(Ordering::SeqCst);
         jarvis_kill();
@@ -895,6 +905,7 @@ pub(crate) fn quit_app(app: &AppHandle) {
 
 fn main() {
     update::finish();
+    one_folder();
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _, _| show_main(app)))
         .invoke_handler(tauri::generate_handler![
