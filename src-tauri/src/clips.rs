@@ -287,7 +287,7 @@ fn supervise() {
                             next_a += 1;
                         }
                     }
-                    if tick % 25 == 0 && st(|x| x.rec.is_some()) && crate::disk_info().free < MIN_FREE {
+                    if tick % 25 == 0 && st(|x| x.rec.is_some()) && crate::disk('C').free < MIN_FREE {
                         emit("error", "Almost no space left, recording stopped");
                         finish_recording(&s);
                     }
@@ -440,6 +440,8 @@ fn parse_key(s: &str) -> Option<(HOT_KEY_MODIFIERS, u32)> {
     if (0x30..=0x5A).contains(&vk) && !m.contains(MOD_CONTROL) && !m.contains(MOD_ALT) { return None; }
     Some((m, vk))
 }
+pub fn usable_key(s: &str) -> bool { parse_key(s).is_some() }
+pub fn own_keys() -> [String; 2] { st(|s| [s.cfg.hotkey.clone(), s.cfg.rec_hotkey.clone()]) }
 fn hotkeys() {
     unsafe {
         HOTKEY_THREAD.store(GetCurrentThreadId(), SeqCst);
@@ -604,7 +606,7 @@ fn toggle_record() -> Result<(), String> {
         return Ok(());
     }
     if !ffmpeg().exists() { return Err("The recorder is not installed yet".into()); }
-    if crate::disk_info().free < MIN_FREE { return Err("Not enough free space to record".into()); }
+    if crate::disk('C').free < MIN_FREE { return Err("Not enough free space to record".into()); }
     st(|s| s.rec_wish = true);
     emit("state", "");
     // the recorder may have to start first

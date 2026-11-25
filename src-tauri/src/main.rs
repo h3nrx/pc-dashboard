@@ -76,20 +76,40 @@ struct MemStatus { len: u32, load: u32, total: u64, avail: u64, page_total: u64,
 #[link(name = "kernel32")]
 extern "system" {
     fn GetDiskFreeSpaceExW(dir: *const u16, avail: *mut u64, total: *mut u64, free: *mut u64) -> i32;
+    fn GetLogicalDrives() -> u32;
+    fn GetDriveTypeW(root: *const u16) -> u32;
+    fn GetVolumeInformationW(root: *const u16, name: *mut u16, len: u32, serial: *mut u32, max: *mut u32, flags: *mut u32, fs: *mut u16, fs_len: u32) -> i32;
     fn GetSystemTimes(idle: *mut FileTime, kernel: *mut FileTime, user: *mut FileTime) -> i32;
     fn GlobalMemoryStatusEx(m: *mut MemStatus) -> i32;
     fn GetTickCount64() -> u64;
 }
 
 #[derive(Serialize)]
-struct Disk { total: u64, free: u64 }
+struct Disk { letter: char, name: String, total: u64, free: u64 }
 
-#[tauri::command]
-fn disk_info() -> Disk {
-    let p: Vec<u16> = "C:\\\0".encode_utf16().collect();
+fn disk(letter: char) -> Disk {
+    let p: Vec<u16> = format!("{letter}:\\\0").encode_utf16().collect();
     let (mut a, mut t, mut f) = (0u64, 0u64, 0u64);
-    unsafe { GetDiskFreeSpaceExW(p.as_ptr(), &mut a, &mut t, &mut f) };
-    Disk { total: t, free: a }
+    let mut name = [0u16; 64];
+    unsafe {
+        GetDiskFreeSpaceExW(p.as_ptr(), &mut a, &mut t, &mut f);
+        let n = std::ptr::null_mut();
+        GetVolumeInformationW(p.as_ptr(), name.as_mut_ptr(), 64, n, n, n, std::ptr::null_mut(), 0);
+    }
+    Disk { letter, name: String::from_utf16_lossy(name.split(|c| *c == 0).next().unwrap_or(&[])), total: t, free: a }
+}
+
+/// every built-in drive, C: first (no USB sticks, DVD or network drives)
+#[tauri::command]
+async fn disks() -> Vec<Disk> {
+    blocking(|| {
+        let mask = unsafe { GetLogicalDrives() };
+        let mut v: Vec<Disk> = ('A'..='Z').enumerate().filter(|(i, _)| mask >> i & 1 == 1).map(|(_, c)| c)
+            .filter(|c| { let p: Vec<u16> = format!("{c}:\\\0").encode_utf16().collect(); unsafe { GetDriveTypeW(p.as_ptr()) == 3 } })
+            .map(disk).filter(|d| d.total > 0).collect();
+        v.sort_by_key(|d| d.letter != 'C');
+        v
+    }).await
 }
 
 static CPU_PREV: Mutex<(u64, u64)> = Mutex::new((0, 0));
@@ -331,7 +351,7 @@ struct CleanResult { freed: u64, done: Vec<String>, failed: Vec<String> }
 #[tauri::command]
 async fn clean(ids: Vec<String>) -> CleanResult {
     blocking(move || {
-        let before = disk_info().free;
+        let before = disk('C').free;
         let (mut done, mut failed) = (vec![], vec![]);
         for c in find_candidates().into_iter().filter(|c| ids.contains(&c.id)) {
             // one by one, so a single locked file doesn't stop the rest
@@ -339,7 +359,7 @@ async fn clean(ids: Vec<String>) -> CleanResult {
             for p in &c.paths { if trash::delete(p).is_err() { errors += 1 } }
             if errors == 0 { done.push(c.title) } else { failed.push(format!("{} ({errors} files in use)", c.title)) }
         }
-        CleanResult { freed: disk_info().free.saturating_sub(before), done, failed }
+        CleanResult { freed: disk('C').free.saturating_sub(before), done, failed }
     })
     .await
 }
@@ -715,7 +735,7 @@ fn key_hint(v: Option<&serde_json::Value>) -> Option<String> {
 }
 
 #[derive(Serialize)]
-struct JarvisStatus { installed: bool, python: bool, running: bool, groq: Option<String>, eleven: Option<String>, lang: String, voice: String }
+struct JarvisStatus { installed: bool, python: bool, running: bool, groq: Option<String>, eleven: Option<String>, lang: String, voice: String, talk: String }
 
 fn jarvis_status_now() -> JarvisStatus {
     let s = jarvis_settings();
@@ -727,6 +747,7 @@ fn jarvis_status_now() -> JarvisStatus {
         eleven: key_hint(s.get("elevenlabs_key")),
         lang: s.get("lang").and_then(|v| v.as_str()).unwrap_or("en").to_string(),
         voice: s.get("voice_name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        talk: s.get("talk_button").and_then(|v| v.as_str()).unwrap_or("x2").to_string(),
     }
 }
 
@@ -765,9 +786,12 @@ async fn jarvis_start() -> Result<JarvisStatus, String> {
 }
 
 #[tauri::command]
-async fn jarvis_save(groq: String, eleven: String, lang: String) -> Result<JarvisStatus, String> {
+async fn jarvis_save(groq: String, eleven: String, lang: String, talk: String) -> Result<JarvisStatus, String> {
     blocking(move || {
+        if !["x1", "x2", "middle"].contains(&talk.as_str()) && !clips::usable_key(&talk) { return Err("That key can't be used. Try F9 or Alt + a letter.".into()); }
+        if clips::own_keys().contains(&talk) { return Err("That key already belongs to Clips.".into()); }
         let mut s = jarvis_settings();
+        s.insert("talk_button".into(), talk.as_str().into());
         let (g, e) = (groq.trim(), eleven.trim());
         if !g.is_empty() { s.insert("groq_key".into(), g.into()); }
         if !e.is_empty() { s.insert("elevenlabs_key".into(), e.into()); }
@@ -874,7 +898,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _, _| show_main(app)))
         .invoke_handler(tauri::generate_handler![
-            disk_info, stats, scan_folders, open_folder, cleanup_candidates, clean,
+            disks, stats, scan_folders, open_folder, cleanup_candidates, clean,
             autostart_list, autostart_set, autostart_remove, icons, themes, theme_set,
             jarvis_status, jarvis_start, jarvis_save, open_url,
             clips::clips_state, clips::clips_list, clips::clips_config, clips::clips_save, clips::clips_record,

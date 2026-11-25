@@ -95,6 +95,7 @@ function go(page) {
   $("#scroll").scrollTop = 0;
   moveIndicator();
   // always show the current state, things change outside the app too
+  if (page === "overview") loadDisk().catch(console.error);
   if (page === "autostart") loadAutostart().catch(console.error);
   if (page === "settings") loadSettings();
   if (page === "clips") { clipState(); loadClips().catch(console.error); }
@@ -123,18 +124,70 @@ function confirmBox(title, text, rows) {
   });
 }
 
-/* ---------- disk ---------- */
-async function loadDisk() {
-  const d = await invoke("disk_info");
-  const used = d.total - d.free, pct = used / d.total, freePct = d.free / d.total;
-  $("#free").textContent = gb(d.free);
-  $("#used").textContent = gb(used);
-  $("#total").textContent = gb(d.total);
-  requestAnimationFrame(() => {
-    const off = 414.7 * (1 - pct);
-    $("#ring").style.strokeDashoffset = off;
-    $("#ringmask-c").style.strokeDashoffset = off;
+/* ---------- drives: one page per drive, swipe or use the dots ---------- */
+const drv = { list: [], at: 0 };
+try { drv.want = localStorage.getItem("drive"); } catch {}
+async function loadDisk() { renderDisks(await invoke("disks")); }
+function renderDisks(list) {
+  const keep = drv.list.length ? drv.list[drv.at]?.letter : drv.want;
+  const same = list.map((d) => d.letter).join() === drv.list.map((d) => d.letter).join();
+  drv.list = list;
+  if (!same) {
+    $("#d-track").innerHTML = list.map((d, i) => `
+      <div class="d-slide">
+        <div class="s-top"><svg><use href="#i-disk"/></svg><span>Drive ${d.letter}:</span><span class="d-name"></span></div>
+        <div class="ring">
+          <svg viewBox="0 0 160 160">
+            <defs><mask id="ringmask${i}"><circle class="off" cx="80" cy="80" r="66" stroke="#fff" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="414.7" stroke-dashoffset="414.7"/></mask></defs>
+            <circle class="track" cx="80" cy="80" r="66"/>
+            <circle class="fill off" cx="80" cy="80" r="66" style="mask:url(#ringmask${i})"/>
+          </svg>
+          <div class="ring-in"><b class="free">–</b><span>free</span></div>
+        </div>
+        <div class="legend"><span><i class="dot a"></i><b class="used">–</b> used</span><span><i class="dot b"></i><b class="total">–</b> total</span></div>
+      </div>`).join("");
+    $("#d-dots").innerHTML = list.length > 1 ? list.map((d) => `<button title="${d.letter}:" aria-label="${d.letter}:"><i></i></button>`).join("") : "";
+    $("#drive").classList.toggle("many", list.length > 1);
+    document.querySelectorAll("#d-dots button").forEach((b, i) => (b.onclick = () => showDrive(i)));
+    showDrive(list.findIndex((d) => d.letter === keep), false);
+  }
+  document.querySelectorAll(".d-slide").forEach((s, i) => {
+    const d = list[i], used = d.total - d.free;
+    s.querySelector(".d-name").textContent = d.name;
+    s.querySelector(".free").textContent = gb(d.free);
+    s.querySelector(".free").classList.toggle("long", gb(d.free).length > 7);
+    s.querySelector(".used").textContent = gb(used);
+    s.querySelector(".total").textContent = gb(d.total);
+    requestAnimationFrame(() => s.querySelectorAll(".off").forEach((c) => (c.style.strokeDashoffset = 414.7 * (1 - used / d.total))));
   });
+}
+function showDrive(i, save = true) {
+  drv.at = Math.max(0, Math.min(drv.list.length - 1, i));
+  $("#d-track").style.transform = `translateX(${-100 * drv.at}%)`;
+  document.querySelectorAll("#d-dots button").forEach((b, n) => b.classList.toggle("on", n === drv.at));
+  if (save) try { localStorage.setItem("drive", drv.list[drv.at].letter); } catch {}
+}
+{
+  const card = $("#drive"), track = $("#d-track");
+  let x0 = null, dx = 0, wheelAt = -1000;
+  card.addEventListener("pointerdown", (e) => { if (drv.list.length < 2 || e.button || e.target.closest("button")) return; x0 = e.clientX; dx = 0; try { card.setPointerCapture(e.pointerId); } catch {} track.classList.add("drag"); });
+  card.addEventListener("pointermove", (e) => {
+    if (x0 == null) return;
+    dx = e.clientX - x0;
+    const end = (drv.at === 0 && dx > 0) || (drv.at === drv.list.length - 1 && dx < 0);      // rubber band at the ends
+    track.style.transform = `translateX(calc(${-100 * drv.at}% + ${end ? dx * 0.25 : dx}px))`;
+  });
+  const drop = () => { if (x0 == null) return; x0 = null; track.classList.remove("drag"); showDrive(drv.at + (dx < -45 ? 1 : dx > 45 ? -1 : 0)); };
+  card.addEventListener("pointerup", drop);
+  card.addEventListener("pointercancel", drop);
+  card.addEventListener("wheel", (e) => {
+    const s = $("#scroll"), side = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+    if (drv.list.length < 2 || (!side && s.scrollHeight > s.clientHeight + 2)) return;      // the page itself scrolls
+    e.preventDefault();
+    if (e.timeStamp - wheelAt < 350) return;
+    wheelAt = e.timeStamp;
+    showDrive(drv.at + ((side ? e.deltaX : e.deltaY) > 0 ? 1 : -1));
+  }, { passive: false });
 }
 
 /* ---------- live stats with sparklines ---------- */
@@ -378,12 +431,14 @@ function jState(s) {
   if (!ready) return chip("warn", "Offline");
   chip("on" + (s !== "idle" ? " busy" : ""), { idle: "Online", listening: "Listening", thinking: "Thinking", speaking: "Speaking" }[s]);
 }
-function btnName(b) { return { x1: "back", x2: "forward", middle: "middle" }[b] || b; }
+const MOUSE = { x1: "Mouse back", x2: "Mouse forward", middle: "Mouse wheel button" };
+const talkText = (b) => MOUSE[b] || b.replaceAll("+", " + ");
+const holdText = (b) => (MOUSE[b] ? `Hold your ${{ x1: "back", x2: "forward", middle: "middle" }[b]} mouse button and talk.` : `Hold ${talkText(b)} and talk.`);
 function jHint() {
   const idle = $("#j-idle");
   if (!idle) return;
   idle.textContent = jv.status?.running
-    ? `Hold your ${btnName(jv.button)} mouse button and talk.`
+    ? holdText(jv.status.talk || jv.button)
     : jv.status?.groq && jv.status?.python ? "Jarvis is starting …" : "Click here to set up Jarvis.";
 }
 
@@ -503,7 +558,37 @@ orb.addEventListener("pointerup", (e) => { if (jv.rec) { e.stopPropagation(); st
 orb.addEventListener("pointercancel", stopTalk);
 orb.addEventListener("click", (e) => { if (jv.status?.running) e.stopPropagation(); });
 
-/* key dialog: opens when you click the panel */
+// "Ctrl+Alt+F8"; letters by what is printed on the key, so Y and Z are right on a German keyboard
+function keyName(e) {
+  const c = e.code.replace(/^(Key|Digit)/, "");
+  const name = e.code.startsWith("Key") && e.keyCode >= 65 && e.keyCode <= 90 ? String.fromCharCode(e.keyCode) : c;
+  return (e.ctrlKey ? "Ctrl+" : "") + (e.altKey ? "Alt+" : "") + (e.shiftKey ? "Shift+" : "") + name;
+}
+const ONLY_MOD = ["Control", "Alt", "Shift", "Meta", "AltGraph"];
+
+/* talk key inside the dialog */
+let talk = "x2", talkWait = false;
+function setTalk(v) { talk = v; talkWait = false; $("#k-talk").classList.remove("wait"); $("#k-talk").textContent = talkText(v); }
+$("#k-talk").onclick = () => { if (talkWait) return; talkWait = true; $("#k-talk").classList.add("wait"); $("#k-talk").textContent = "Press a key …"; $("#k-talk").focus(); };
+$("#k-talk").onblur = () => { if (talkWait) setTalk(talk); };
+document.addEventListener("keydown", (e) => {
+  if (!talkWait) return;
+  e.preventDefault(); e.stopPropagation();
+  if (ONLY_MOD.includes(e.key)) return;
+  if (e.key === "Escape") return setTalk(talk);
+  const k = keyName(e);
+  if (cs && (k === cs.hotkey || k === cs.rec_hotkey)) { toast("That key already belongs to Clips.", true); return setTalk(talk); }
+  if (!/^((Ctrl|Alt|Shift)\+)*(F\d{1,2}|Insert|Delete|Home|End|PageUp|PageDown|Pause)$/.test(k) && !/^(?=.*(Ctrl|Alt)\+)((Ctrl|Alt|Shift)\+)+[A-Z0-9]$/.test(k)) { toast("That key can't be used. Try F9 or Alt + a letter.", true); return setTalk(talk); }
+  setTalk(k);
+}, true);
+for (const ev of ["mousedown", "mouseup", "auxclick"]) document.addEventListener(ev, (e) => {
+  const b = { 1: "middle", 3: "x1", 4: "x2" }[e.button];
+  if (!b) return;
+  if (b !== "middle" || talkWait) e.preventDefault();      // the side buttons must not leave the page
+  if (talkWait && ev === "mousedown") { e.stopPropagation(); setTalk(b); }
+}, true);
+
+/* setup dialog: opens when you click the panel */
 let lang = "en";
 function setLang(v) { lang = v; document.querySelectorAll("#k-lang button").forEach((b) => b.classList.toggle("on", b.dataset.v === v)); }
 document.querySelectorAll("#k-lang button").forEach((b) => (b.onclick = () => setLang(b.dataset.v)));
@@ -515,19 +600,20 @@ $("#jarvis").onclick = () => {
   $("#k-eleven").placeholder = s.eleven ? `Saved · ends in ${s.eleven}` : "sk_…";
   $("#k-py").hidden = !!s.python;
   setLang(s.lang === "de" ? "de" : "en");
+  setTalk(s.talk || "x2");
   $("#keys").classList.add("open");
   setTimeout(() => $("#k-groq").focus(), 50);
 };
 $("#k-no").onclick = closeKeys;
 $("#keys").onclick = (e) => { if (e.target.id === "keys") closeKeys(); };
-$("#keys").addEventListener("keydown", (e) => { if (e.key === "Escape") closeKeys(); if (e.key === "Enter") $("#k-yes").click(); });
+$("#keys").addEventListener("keydown", (e) => { if (e.key === "Escape") closeKeys(); if (e.key === "Enter" && e.target.id !== "k-talk") $("#k-yes").click(); });
 $("#k-yes").onclick = async () => {
   const groq = $("#k-groq").value.trim(), eleven = $("#k-eleven").value.trim();
-  if (!groq && !eleven && lang === (jv.status?.lang || "en")) { closeKeys(); return; }
+  if (!groq && !eleven && lang === (jv.status?.lang || "en") && talk === (jv.status?.talk || "x2")) { closeKeys(); return; }
   const btn = $("#k-yes");
   btn.disabled = true; btn.innerHTML = `<span class="spin"></span>Saving …`;
   try {
-    jv.status = await invoke("jarvis_save", { groq, eleven, lang });
+    jv.status = await invoke("jarvis_save", { groq, eleven, lang, talk });
     closeKeys();
     toast("Saved. Jarvis restarted.");
     jv.since = -1;
@@ -574,7 +660,7 @@ function showClipState(s) {
   $("#nav-rec").className = "nav-rec" + (rec ? " rec" : live ? " on" : "");
   if (document.activeElement !== $("#c-len")) $("#c-len").value = lenText(s.secs);
   document.querySelectorAll("#c-quick button").forEach((b) => b.classList.toggle("on", +b.dataset.s === s.secs));
-  document.querySelectorAll(".keycap").forEach((k) => { if (k !== keyWait) k.textContent = s[k.dataset.key] || "None"; });
+  document.querySelectorAll(".keycap[data-key]").forEach((k) => { if (k !== keyWait) k.textContent = s[k.dataset.key] || "None"; });
   // look, name, hidden tabs
   if (s.look !== look.name || s.fx !== look.fx) setLook(s.look, s.fx);
   $("#brand").textContent = s.name || s.user || "PC";
@@ -630,19 +716,19 @@ $("#c-rec").onclick = async () => {
   try { showClipState(await invoke("clips_record")); } catch (e) { toast(String(e), true); clipState(); }
   $("#c-rec").disabled = false;
 };
-document.querySelectorAll(".keycap").forEach((k) => {
+document.querySelectorAll(".keycap[data-key]").forEach((k) => {
   k.onclick = () => { keyWait = k; k.textContent = "Press a key …"; k.classList.add("wait"); k.focus(); };
   k.onblur = () => { if (keyWait === k) keyWait = null; k.classList.remove("wait"); if (cs) k.textContent = cs[k.dataset.key] || "None"; };
 });
 document.addEventListener("keydown", (e) => {
   if (!keyWait) return;
   e.preventDefault(); e.stopPropagation();
-  if (["Control", "Alt", "Shift", "Meta", "AltGraph"].includes(e.key)) return;
+  if (ONLY_MOD.includes(e.key)) return;
   const k = keyWait;
   if (e.key !== "Escape") {
-    const name = e.code.replace(/^(Key|Digit)/, "");
-    const key = e.key === "Backspace" ? "" : (e.ctrlKey ? "Ctrl+" : "") + (e.altKey ? "Alt+" : "") + (e.shiftKey ? "Shift+" : "") + name;
-    clipSet({ [k.dataset.key]: key });
+    const key = e.key === "Backspace" ? "" : keyName(e);
+    if (key && key === jv.status?.talk) toast("That key already belongs to Jarvis.", true);
+    else clipSet({ [k.dataset.key]: key });
   }
   k.blur();
 }, true);

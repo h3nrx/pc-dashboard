@@ -95,24 +95,13 @@
       <!-- OVERVIEW -->
       <section class="page show" id="overview">
         <div class="top-row">
-          <div class="card drive">
-            <div class="s-top"><svg><use href="#i-disk"/></svg><span>Drive C:</span></div>
-            <div class="ring">
-              <svg viewBox="0 0 160 160">
-                <defs><mask id="ringmask"><circle id="ringmask-c" cx="80" cy="80" r="66" stroke="#fff" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="414.7" stroke-dashoffset="414.7"/></mask></defs>
-                <circle class="track" cx="80" cy="80" r="66"/>
-                <circle class="fill" id="ring" cx="80" cy="80" r="66"/>
-              </svg>
-              <div class="ring-in"><b id="free">–</b><span>free</span></div>
-            </div>
-            <div class="legend"><span><i class="dot a"></i><b id="used">–</b> used</span><span><i class="dot b"></i><b id="total">–</b> total</span></div>
-          </div>
+          <div class="card drive" id="drive"><div class="d-track" id="d-track"></div><div class="d-dots" id="d-dots"></div></div>
 
-          <div class="card jarvis" id="jarvis" title="Click to set your API keys">
+          <div class="card jarvis" id="jarvis" title="Click to set up Jarvis">
             <div class="s-top">
               <svg><use href="#i-mic"/></svg><span>Jarvis</span>
               <span class="chip" id="j-chip"><i></i><span>Checking …</span></span>
-              <span class="j-key"><svg><use href="#i-key"/></svg>API keys</span>
+              <span class="j-key"><svg><use href="#i-key"/></svg>Set up</span>
             </div>
             <div class="j-body">
               <div class="orb" id="j-orb" title="Hold to talk"><i></i><i></i><i></i><b></b></div>
@@ -308,7 +297,7 @@
 </div>
 <div class="modal" id="keys">
   <div class="dialog">
-    <h3>Jarvis API keys</h3>
+    <h3>Set up Jarvis</h3>
     <p>Saved only on this PC. Leave a field empty to keep the key you have.</p>
     <div class="field" id="k-py" hidden><div class="f-top"><label>Python <span>needed for Jarvis</span></label><button class="lnk" data-url="https://www.python.org/downloads/">Download<svg><use href="#i-link"/></svg></button></div></div>
     <div class="field">
@@ -322,6 +311,10 @@
     <div class="field">
       <div class="f-top"><label>Language</label></div>
       <div class="seg" id="k-lang"><button data-v="en">English</button><button data-v="de">Deutsch</button></div>
+    </div>
+    <div class="field">
+      <div class="f-top"><label>Talk key <span>hold it to talk</span></label></div>
+      <button class="keycap" id="k-talk" title="Click, then press a key or a mouse button"></button>
     </div>
     <div class="m-btns"><button class="btn" id="k-no">Cancel</button><button class="btn chrome" id="k-yes">Save</button></div>
   </div>

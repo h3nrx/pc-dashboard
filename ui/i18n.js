@@ -11,7 +11,10 @@ const DE = {
   "Uptime": "Laufzeit", "Cancel": "Abbrechen", "Yes, do it": "Ja, machen", "Save": "Speichern", "Saving …": "Speichert …", "Loading …": "Lädt …",
   "Minimize": "Minimieren", "Close": "Schließen", "System": "System", "Shortcut": "Verknüpfung", "Task": "Aufgabe",
   // overview
-  "Drive C:": "Laufwerk C:", "free": "frei", "used": "belegt", "total": "gesamt", "Processor load": "Prozessorlast", "Memory": "Arbeitsspeicher", "GPU": "Grafikkarte",
+  "Set up": "Einrichten", "Set up Jarvis": "Jarvis einrichten", "Click to set up Jarvis": "Klicken, um Jarvis einzurichten", "Talk key": "Sprechtaste", "hold it to talk": "zum Sprechen halten",
+  "Click, then press a key or a mouse button": "Klicken, dann eine Taste oder Maustaste drücken", "Mouse back": "Maus zurück", "Mouse forward": "Maus vor", "Mouse wheel button": "Mausrad-Taste",
+  "That key already belongs to Clips.": "Die Taste gehört schon zu den Clips.", "That key already belongs to Jarvis.": "Die Taste gehört schon Jarvis.",
+  "free": "frei", "used": "belegt", "total": "gesamt", "Processor load": "Prozessorlast", "Memory": "Arbeitsspeicher", "GPU": "Grafikkarte",
   "No NVIDIA GPU found": "Keine NVIDIA-Grafikkarte gefunden", "Can be cleaned": "Kann weg", "searching": "sucht", "all clean": "alles sauber",
   "only stuff to review": "nur Sachen zum Prüfen", "Desktop themes": "Desktop-Themes", "turned on": "eingeschaltet",
   // jarvis
@@ -94,6 +97,7 @@ const DE_RULES = [
   [/^Clips older than 3 months(.*)$/, (_, a) => "Clips älter als 3 Monate" + a.replace("items", "Dateien")],
   [/^\.exe \/ \.msi older than 2 weeks, usually already installed(.*)$/, (_, a) => ".exe / .msi älter als 2 Wochen, meist schon installiert" + a.replace("items", "Dateien")],
   [/^Active is (\S+)\. Old: (.*)$/, (_, a, b) => `Aktiv ist ${a}. Alt: ` + b.replace("items", "Ordner")],
+  [/^Drive ([A-Z]:)$/, "Laufwerk $1"], [/^Hold (?!your )(.+) and talk\.$/, "Halte $1 und sprich."],
   [/^Hold your (\w+) mouse button and talk\.$/, (_, b) => `Halte deine ${{ back: "Zurück-Maustaste", forward: "Vorwärts-Maustaste", middle: "mittlere Maustaste" }[b] || b} und sprich.`],
   [/^Saved · ends in (.+)$/, "Gespeichert · endet auf $1"], [/^No microphone access: (.+)$/, "Kein Mikrofonzugriff: $1"], [/^Python not found (.+)$/, "Python nicht gefunden $1"],
   [/^(.+) (?:is|are) already used by another app$/, "$1 wird schon von einer anderen App benutzt"],
@@ -109,7 +113,7 @@ function tr(s) {
 if (LANG === "de") {
   document.documentElement.lang = "de";
   // names of apps, folders and what you said are never touched
-  const skip = "#folder-list .row, .j-line:not(.idle), #auto-list .sub, .app-ic, #p-name, #m-list, #brand, .u-notes, script, style";
+  const skip = "#folder-list .row, .j-line:not(.idle), #auto-list .sub, .app-ic, #p-name, #m-list, #brand, .u-notes, .d-name, script, style";
   const text = (n) => {
     const raw = n.nodeValue, t = raw.trim();
     if (!t || n.parentElement?.closest(skip) || n.parentElement?.matches("#auto-list .name")) return;
