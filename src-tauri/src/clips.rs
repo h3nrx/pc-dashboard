@@ -637,6 +637,7 @@ pub async fn clips_delete(name: String) -> Result<(), String> {
         let p = clip_path(&name)?;
         trash::delete(&p).map_err(|e| e.to_string())?;
         if let Some((t, _)) = find_thumb(&name) { let _ = fs::remove_file(t); }
+        let _ = fs::remove_file(thumbs().join(format!("{name}~strip.jpg")));
         Ok(())
     }).await
 }
@@ -653,6 +654,111 @@ pub fn clips_show(name: String) -> Result<(), String> {
     if name.is_empty() { let _ = fs::create_dir_all(folder()); c.arg(folder()); }
     else { c.raw_arg(format!("/select,\"{}\"", clip_path(&name)?.to_string_lossy())); }
     c.spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
+/* ---------- simple editor: keep some parts, mute some, save as a new clip ---------- */
+fn probe(p: &Path) -> Option<(f64, bool)> {
+    let out = Command::new(ffmpeg()).creation_flags(NO_WINDOW).args(["-hide_banner", "-i"]).arg(p).output().ok()?;
+    let txt = String::from_utf8_lossy(&out.stderr).to_string();
+    let d = txt.split("Duration: ").nth(1)?.split(',').next()?.to_string();
+    let secs = d.split(':').try_fold(0.0, |a, x| x.trim().parse::<f64>().ok().map(|v| a * 60.0 + v))?;
+    Some((secs, txt.contains("Audio:")))
+}
+
+/// a row of small pictures for the timeline
+#[tauri::command]
+pub async fn clips_strip(name: String) -> Result<String, String> {
+    blocking(move || {
+        let p = clip_path(&name)?;
+        let (secs, _) = probe(&p).ok_or("Could not read the clip")?;
+        let jpg = thumbs().join(format!("{name}~strip.jpg"));
+        if !jpg.exists() {
+            let n = 12;
+            let vf = format!("fps={:.5},scale=-2:72,tile={n}x1", n as f64 / secs.max(0.5));
+            Command::new(ffmpeg()).creation_flags(NO_WINDOW).args(["-hide_banner", "-loglevel", "error", "-y", "-i"]).arg(&p)
+                .args(["-vf", &vf, "-frames:v", "1", "-q:v", "5"]).arg(&jpg).output().map_err(|e| e.to_string())?;
+        }
+        if jpg.exists() { Ok(jpg.to_string_lossy().to_string()) } else { Err("No preview".into()) }
+    }).await
+}
+
+#[derive(Deserialize)]
+pub struct Part { a: f64, b: f64, mute: bool }
+static EDIT: Mutex<Option<Arc<Mutex<Child>>>> = Mutex::new(None);
+
+#[tauri::command]
+pub async fn clips_edit(name: String, parts: Vec<Part>) -> Result<String, String> {
+    blocking(move || {
+        let src = clip_path(&name)?;
+        let (secs, audio) = probe(&src).ok_or("Could not read the clip")?;
+        let parts: Vec<Part> = parts.into_iter().map(|p| Part { a: p.a.max(0.0), b: p.b.min(secs), mute: p.mute }).filter(|p| p.b - p.a >= 0.05).collect();
+        if parts.is_empty() || parts.len() > 200 || parts.windows(2).any(|w| w[1].a < w[0].b - 0.001) { return Err("Nothing left to save".into()); }
+        let total: f64 = parts.iter().map(|p| p.b - p.a).sum();
+        let mut fc = String::new();
+        for (i, p) in parts.iter().enumerate() {
+            fc += &format!("[0:v]trim=start={:.3}:end={:.3},setpts=PTS-STARTPTS[v{i}];", p.a, p.b);
+            if audio { fc += &format!("[0:a]atrim=start={:.3}:end={:.3},asetpts=PTS-STARTPTS{}[a{i}];", p.a, p.b, if p.mute { ",volume=0" } else { "" }); }
+        }
+        for i in 0..parts.len() { fc += &format!("[v{i}]{}", if audio { format!("[a{i}]") } else { String::new() }); }
+        fc += &format!("concat=n={}:v=1:a={}[v]{}", parts.len(), audio as u8, if audio { "[a]" } else { "" });
+
+        let base = name.trim_end_matches(" (edited)").trim_end_matches(" (bearbeitet)").to_string();
+        let tag = if german() { "bearbeitet" } else { "edited" };
+        let mut out_name = format!("{base} ({tag})");
+        let mut n = 2;
+        while folder().join(format!("{out_name}.mp4")).exists() { out_name = format!("{base} ({tag} {n})"); n += 1; }
+        let out = folder().join(format!("{out_name}.mp4"));
+        let tmp = folder().join(format!("{out_name}.mp4.part"));      // not .mp4, so the list never shows it half done
+
+        // the GPU encoder that works for clips on this PC, with the CPU as the safe fallback
+        let gpu: &[&str] = match st(|s| s.cfg.encoder) {
+            0 => &["-c:v", "h264_nvenc", "-preset", "p5", "-rc", "vbr", "-cq", "21", "-b:v", "0"],
+            1 => &["-c:v", "h264_amf", "-quality", "quality", "-rc", "cqp", "-qp_i", "20", "-qp_p", "22"],
+            2 => &["-c:v", "h264_qsv", "-global_quality", "21"],
+            _ => &[],
+        };
+        let cpu: &[&str] = &["-c:v", "libx264", "-preset", "veryfast", "-crf", "20"];
+        let mut last = String::new();
+        for enc in [gpu, cpu] {
+            if enc.is_empty() { continue; }
+            let mut c = Command::new(ffmpeg());
+            c.creation_flags(NO_WINDOW).args(["-hide_banner", "-nostats", "-loglevel", "error", "-y", "-i"]).arg(&src)
+                .args(["-filter_complex", &fc, "-map", "[v]"]);
+            if audio { c.args(["-map", "[a]", "-c:a", "aac", "-b:a", "192k"]); }
+            c.args(enc).args(["-pix_fmt", "yuv420p", "-colorspace", "bt470bg", "-color_range", "tv", "-movflags", "+faststart", "-progress", "pipe:1", "-f", "mp4"])
+                .arg(&tmp).stdout(Stdio::piped()).stderr(Stdio::piped());
+            let mut child = c.spawn().map_err(|e| e.to_string())?;
+            tie_to_app(&child);
+            let (out_pipe, mut err_pipe) = (child.stdout.take(), child.stderr.take());
+            let child = Arc::new(Mutex::new(child));
+            *EDIT.lock().unwrap_or_else(|e| e.into_inner()) = Some(child.clone());
+            let err = thread::spawn(move || { let mut s = String::new(); if let Some(e) = err_pipe.as_mut() { let _ = e.read_to_string(&mut s); } s });
+            if let Some(o) = out_pipe {
+                use std::io::BufRead;
+                for l in std::io::BufReader::new(o).lines().map_while(Result::ok) {
+                    if let Some(us) = l.strip_prefix("out_time_us=").and_then(|v| v.parse::<f64>().ok()) {
+                        emit("edit", &format!("{:.0}", (us / 1e6 / total * 100.0).clamp(0.0, 99.0)));
+                    }
+                }
+            }
+            let ok = child.lock().unwrap_or_else(|e| e.into_inner()).wait().map(|s| s.success()).unwrap_or(false);
+            let stopped = EDIT.lock().unwrap_or_else(|e| e.into_inner()).take().is_none();
+            last = err.join().unwrap_or_default();
+            if ok && !stopped && tmp.exists() {
+                fs::rename(&tmp, &out).map_err(|e| e.to_string())?;
+                make_thumb(&out);
+                return Ok(out_name);
+            }
+            let _ = fs::remove_file(&tmp);
+            if stopped { return Err("Stopped".into()); }
+        }
+        Err(format!("Could not save the edit. {}", last.lines().last().unwrap_or("")))
+    }).await
+}
+
+#[tauri::command]
+pub fn clips_edit_stop() {
+    if let Some(c) = EDIT.lock().unwrap_or_else(|e| e.into_inner()).take() { let _ = c.lock().unwrap_or_else(|e| e.into_inner()).kill(); }
 }
 
 /* ---------- lifecycle ---------- */

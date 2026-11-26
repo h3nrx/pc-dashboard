@@ -50,6 +50,12 @@
     <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></symbol>
     <symbol id="i-eye" viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="m5 19 14-14"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M5.5 15.5A1 1 0 0 1 4.5 14.5v-8a2 2 0 0 1 2-2h8a1 1 0 0 1 1 1"/></symbol>
+    <symbol id="i-cut" viewBox="0 0 24 24"><circle cx="6.5" cy="7" r="2.8"/><circle cx="6.5" cy="17" r="2.8"/><path d="M8.8 8.6 20 17M8.8 15.4 20 7"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5.5v13M16 5.5v13" stroke-width="3"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM16 9.5l5 5M21 9.5l-5 5"/></symbol>
+    <symbol id="i-split" viewBox="0 0 24 24"><path d="M12 3v18M7 8l-3 4 3 4M17 8l3 4-3 4"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7 4.5 11.5 9 16"/><path d="M5 11.5h9.5a5 5 0 0 1 0 10H11"/></symbol>
     <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></symbol>
   </defs>
 </svg>
@@ -286,8 +292,23 @@
 <div class="modal" id="player">
   <div class="dialog wide">
     <video id="p-video" controls playsinline></video>
+    <div class="ed" id="ed" hidden>
+      <div class="ed-tl" id="ed-tl"><div class="ed-strip" id="ed-strip"></div><div id="ed-segs"></div><i class="ed-head" id="ed-head"></i></div>
+      <div class="ed-bar">
+        <button class="icon-btn" id="ed-play" title="Play / pause (Space)"></button>
+        <span class="ed-time" id="ed-time"></span>
+        <button class="btn" id="ed-split" title="Cut at the white line (S)"><svg><use href="#i-split"/></svg><span>Split</span></button>
+        <button class="btn" id="ed-del" title="Selected part (Del)"><svg><use href="#i-trash"/></svg><span>Delete part</span></button>
+        <button class="btn" id="ed-mute" title="Selected part (M)"><svg><use href="#i-mute"/></svg><span>Mute part</span></button>
+        <button class="icon-btn" id="ed-undo" title="Undo (Ctrl + Z)"><svg><use href="#i-undo"/></svg></button>
+        <span class="ed-len" id="ed-len"></span>
+        <button class="btn" id="ed-cancel"><span>Cancel</span></button>
+        <button class="btn chrome" id="ed-save"><svg><use href="#i-check"/></svg><span>Save</span></button>
+      </div>
+    </div>
     <div class="p-foot">
       <div class="p-info"><b id="p-name"></b><span id="p-sub"></span></div>
+      <button class="btn" id="p-cut"><svg><use href="#i-cut"/></svg>Cut</button>
       <button class="btn" id="p-copy"><svg><use href="#i-copy"/></svg>Copy</button>
       <button class="btn" id="p-show"><svg><use href="#i-folder"/></svg>Show file</button>
       <button class="btn" id="p-del"><svg><use href="#i-trash"/></svg>Delete</button>

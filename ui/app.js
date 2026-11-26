@@ -845,14 +845,15 @@ function openPlayer(c) {
   $("#p-video").play().catch(() => {});
 }
 function closePlayer() {
-  if (!playing) return;
+  if (!playing || ed.saving) return;
+  edClose();
   playing = null;
   const v = $("#p-video"); v.pause(); v.removeAttribute("src"); v.load();   // lets go of the file
   $("#player").classList.remove("open");
 }
 $("#p-close").onclick = closePlayer;
 $("#player").onclick = (e) => { if (e.target.id === "player") closePlayer(); };
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePlayer(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") ed.on ? (ed.saving || edClose()) : closePlayer(); });
 $("#p-copy").onclick = async () => { try { await invoke("clips_copy", { name: playing.name }); toast("Copied. Paste it into Discord with Ctrl + V."); } catch (e) { toast(String(e), true); } };
 $("#p-show").onclick = () => invoke("clips_show", { name: playing.name }).catch((e) => toast(String(e), true));
 $("#p-del").onclick = async () => {
@@ -863,11 +864,181 @@ $("#p-del").onclick = async () => {
   loadClips().catch(console.error);
 };
 $("#c-folder").onclick = () => invoke("clips_show", { name: "" }).catch((e) => toast(String(e), true));
+/* ---------- cutting a clip: split, delete parts, mute parts, save as a new clip ---------- */
+const ed = { on: false, segs: [], sel: 0, undo: [], dur: 0, raf: 0, saving: false };
+const edKept = () => ed.segs.filter((s) => !s.del);
+const edAt = (t) => Math.max(0, ed.segs.findIndex((s) => t >= s.a && t < s.b) === -1 ? ed.segs.length - 1 : ed.segs.findIndex((s) => t >= s.a && t < s.b));
+function edPush() { ed.undo.push(JSON.stringify(ed.segs)); if (ed.undo.length > 60) ed.undo.shift(); }
+async function edOpen() {
+  const v = $("#p-video");
+  if (!playing || !isFinite(v.duration) || !v.duration) { toast("The clip is still loading, try again in a second", true); return; }
+  ed.on = true; ed.dur = v.duration; ed.segs = [{ a: 0, b: ed.dur, del: false, mute: false }]; ed.sel = 0; ed.undo = [];
+  v.pause(); v.controls = false; v.muted = false;
+  $("#player .dialog").classList.add("editing");
+  $("#ed").hidden = false;
+  $("#ed-strip").style.backgroundImage = "";
+  edDraw();
+  cancelAnimationFrame(ed.raf); ed.raf = requestAnimationFrame(edLoop);
+  const name = playing.name;
+  try { const s = await invoke("clips_strip", { name }); if (ed.on && playing?.name === name) $("#ed-strip").style.backgroundImage = `url("${T.core.convertFileSrc(s)}")`; } catch {}
+}
+function edClose() {
+  if (!ed.on) return;
+  ed.on = false; cancelAnimationFrame(ed.raf);
+  const v = $("#p-video"); v.controls = true; v.muted = false;
+  $("#player .dialog").classList.remove("editing");
+  $("#ed").hidden = true;
+}
+function edDraw() {
+  const pct = (t) => (t / ed.dur) * 100;
+  const kept = edKept();
+  $("#ed-segs").innerHTML = ed.segs.map((s, i) => `<div class="ed-seg${s.del ? " del" : ""}${s.mute ? " mute" : ""}${i === ed.sel ? " sel" : ""}" style="left:${pct(s.a)}%;width:${pct(s.b - s.a)}%">${s.mute && !s.del ? icon("i-mute") : ""}</div>`).join("")
+    + ed.segs.slice(1).map((s, i) => `<i class="ed-cut" data-i="${i + 1}" style="left:${pct(s.a)}%"></i>`).join("")
+    + (kept.length ? `<i class="ed-grip l" data-g="l" style="left:${pct(kept[0].a)}%"></i><i class="ed-grip r" data-g="r" style="left:${pct(kept[kept.length - 1].b)}%"></i>` : "");
+  const len = kept.reduce((n, s) => n + s.b - s.a, 0);
+  $("#ed-len").textContent = `New length ${clock(len)}`;
+  const s = ed.segs[ed.sel];
+  $("#ed-del span").textContent = s.del ? "Restore" : "Delete part";
+  $("#ed-mute span").textContent = s.mute ? "Sound on" : "Mute part";
+  $("#ed-mute").disabled = s.del;
+  $("#ed-undo").disabled = !ed.undo.length;
+  $("#ed-save").disabled = len < 0.3 || ed.saving;
+}
+function edLoop() {
+  ed.raf = requestAnimationFrame(edLoop);
+  const v = $("#p-video"), t = v.currentTime, kept = edKept();
+  if (!v.paused && kept.length) {
+    const s = ed.segs[edAt(t)];
+    if (t >= kept[kept.length - 1].b - 0.02) { v.pause(); v.currentTime = kept[0].a; }
+    else if (s.del || t < kept[0].a) { const next = kept.find((k) => k.a >= s.b - 0.001) || kept[0]; v.currentTime = next.a + 0.001; }
+    v.muted = ed.segs[edAt(v.currentTime)].mute;
+  }
+  $("#ed-head").style.left = (t / ed.dur) * 100 + "%";
+  $("#ed-time").textContent = `${clock(t)} / ${clock(ed.dur)}`;
+  $("#ed-play").innerHTML = icon(v.paused ? "i-play" : "i-pause");
+}
+function edSplit() {
+  const t = $("#p-video").currentTime, i = edAt(t), s = ed.segs[i];
+  if (t - s.a < 0.1 || s.b - t < 0.1) return;
+  edPush();
+  ed.segs.splice(i, 1, { ...s, b: t }, { ...s, a: t });
+  ed.sel = i + 1; edDraw();
+}
+function edToggle(key) {
+  const s = ed.segs[ed.sel];
+  if (!s || (key === "mute" && s.del)) return;
+  edPush(); s[key] = !s[key];
+  if (key === "del" && !edKept().length) { s.del = false; ed.undo.pop(); toast("At least one part has to stay", true); }
+  edDraw();
+}
+function edPlay() {
+  const v = $("#p-video");
+  if (!v.paused) return v.pause();
+  const kept = edKept();
+  if (kept.length && v.currentTime >= kept[kept.length - 1].b - 0.05) v.currentTime = kept[0].a;
+  v.play().catch(() => {});
+}
+// clicking or dragging on the timeline: seek, or move a cut / a trim grip
+{
+  const tl = $("#ed-tl");
+  let drag = null;
+  const timeAt = (e) => { const r = tl.getBoundingClientRect(); return Math.min(ed.dur, Math.max(0, ((e.clientX - r.left) / r.width) * ed.dur)); };
+  tl.addEventListener("pointerdown", (e) => {
+    if (!ed.on || ed.saving) return;
+    try { tl.setPointerCapture(e.pointerId); } catch {}
+    const cut = e.target.closest(".ed-cut"), grip = e.target.closest(".ed-grip");
+    if (cut || grip) {
+      edPush();
+      if (grip) {
+        // a trim grip moves the edge of the kept part; at the very start/end it first makes the cut-off part
+        const kept = edKept(), left = grip.dataset.g === "l";
+        let i = ed.segs.indexOf(left ? kept[0] : kept[kept.length - 1]);
+        if (left && i === 0) { const s = ed.segs[0]; ed.segs.splice(0, 0, { a: 0, b: 0, del: true, mute: s.mute }); i = 1; }
+        if (!left && i === ed.segs.length - 1) { const s = ed.segs[i]; ed.segs.push({ a: ed.dur, b: ed.dur, del: true, mute: s.mute }); }
+        drag = { i: left ? i : i + 1 };
+      } else drag = { i: +cut.dataset.i };
+      $("#p-video").pause();
+      return;
+    }
+    const t = timeAt(e);
+    drag = { seek: true };
+    $("#p-video").currentTime = t; ed.sel = edAt(t); edDraw();
+  });
+  tl.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const t = timeAt(e);
+    if (drag.seek) { $("#p-video").currentTime = t; return; }
+    const [p, n] = [ed.segs[drag.i - 1], ed.segs[drag.i]];
+    const x = Math.min(n.b - (n.b - n.a > 0 ? 0.1 : 0), Math.max(p.a + (p.b - p.a > 0 ? 0.1 : 0), t));
+    p.b = n.a = Math.min(Math.max(x, p.a), n.b);
+    $("#p-video").currentTime = Math.min(ed.dur - 0.05, x);
+    edDraw();
+  });
+  const up = () => {
+    if (!drag) return;
+    // parts squeezed to nothing disappear again
+    ed.segs = ed.segs.filter((s) => s.b - s.a > 0.04);
+    if (!ed.segs.length) ed.segs = [{ a: 0, b: ed.dur, del: false, mute: false }];
+    ed.segs[0].a = 0; ed.segs[ed.segs.length - 1].b = ed.dur;
+    if (drag.seek) ed.sel = edAt($("#p-video").currentTime);
+    ed.sel = Math.min(ed.sel, ed.segs.length - 1);
+    drag = null; edDraw();
+  };
+  tl.addEventListener("pointerup", up);
+  tl.addEventListener("pointercancel", up);
+}
+$("#p-cut").onclick = edOpen;
+$("#ed-play").onclick = edPlay;
+$("#ed-split").onclick = edSplit;
+$("#ed-del").onclick = () => edToggle("del");
+$("#ed-mute").onclick = () => edToggle("mute");
+$("#ed-undo").onclick = () => { if (ed.undo.length) { ed.segs = JSON.parse(ed.undo.pop()); ed.sel = Math.min(ed.sel, ed.segs.length - 1); edDraw(); } };
+$("#ed-cancel").onclick = () => (ed.saving ? invoke("clips_edit_stop") : edClose());
+$("#ed-save").onclick = async () => {
+  const parts = [];
+  for (const s of edKept()) {
+    const last = parts[parts.length - 1];
+    if (last && Math.abs(last.b - s.a) < 0.001 && last.mute === s.mute) last.b = s.b;
+    else parts.push({ a: s.a, b: s.b, mute: s.mute });
+  }
+  ed.saving = true; edDraw();
+  $("#p-video").pause();
+  $("#ed").classList.add("busy");
+  $("#ed-cancel span").textContent = "Stop";
+  $("#ed-save span").textContent = "Saving … 0%";
+  try {
+    const name = await invoke("clips_edit", { name: playing.name, parts });
+    toast("Saved as a new clip");
+    edClose(); closePlayer();
+    await loadClips();
+    const c = clips.find((x) => x.name === name);
+    if (c) openPlayer(c);
+  } catch (e) { if (String(e) !== "Stopped") toast(String(e), true); }
+  ed.saving = false;
+  $("#ed").classList.remove("busy");
+  $("#ed-cancel span").textContent = "Cancel";
+  $("#ed-save span").textContent = "Save";
+  if (ed.on) edDraw();
+};
+document.addEventListener("keydown", (e) => {
+  if (!ed.on || ed.saving || e.target.closest?.("input, textarea")) return;
+  const k = e.key.toLowerCase();
+  if (k === " ") edPlay();
+  else if (k === "s") edSplit();
+  else if (k === "delete" || k === "backspace") edToggle("del");
+  else if (k === "m") edToggle("mute");
+  else if (k === "z" && e.ctrlKey) $("#ed-undo").click();
+  else if (k === "arrowleft" || k === "arrowright") $("#p-video").currentTime += k === "arrowleft" ? -1 / 30 * (e.shiftKey ? 30 : 1) : 1 / 30 * (e.shiftKey ? 30 : 1);
+  else return;
+  e.preventDefault(); e.stopImmediatePropagation();
+}, true);
+
 T.event.listen("clips", ({ payload: [kind, text] }) => {
-  clipState();
+  if (kind !== "edit") clipState();
   if (kind === "recording") toast("Recording started");
   if (kind === "saved") { toast("Saved"); if (current === "clips") loadClips().catch(console.error); }
   if (kind === "error") toast(text, true);
+  if (kind === "edit" && ed.saving) $("#ed-save span").textContent = `Saving … ${text}%`;
 });
 setInterval(() => { if (!hidden && (current === "clips" || cs?.recording != null)) clipState(); }, 1000);
 

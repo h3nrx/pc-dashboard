@@ -46,6 +46,12 @@ const DE = {
   "Chrome loading bar right after login": "Chrom-Ladebalken direkt nach der Anmeldung", "F6 toggles it, every other key is locked": "F6 schaltet ihn um, alle anderen Tasten sind gesperrt",
   "Chrome icons for Discord, Spotify, Chrome …": "Chrom-Icons für Discord, Spotify, Chrome …", "Chrome pointers with loading animation": "Chrom-Zeiger mit Ladeanimation",
   "No desktop themes on this PC.": "Keine Desktop-Themes auf diesem PC.", "Glass with chrome accents, via Vencord": "Glas mit Chrom-Akzenten, über Vencord",
+  // clip editor
+  "Cut": "Schneiden", "Split": "Teilen", "Delete part": "Teil löschen", "Restore": "Zurückholen", "Mute part": "Teil stumm", "Sound on": "Ton an",
+  "Stop": "Stopp", "Saved as a new clip": "Als neuer Clip gespeichert", "At least one part has to stay": "Mindestens ein Teil muss bleiben",
+  "Nothing left to save": "Nichts mehr übrig zum Speichern", "The clip is still loading, try again in a second": "Der Clip lädt noch, versuch es gleich nochmal",
+  "Play / pause (Space)": "Abspielen / Pause (Leertaste)", "Cut at the white line (S)": "An der weißen Linie teilen (S)", "Selected part (Del)": "Ausgewählter Teil (Entf)",
+  "Selected part (M)": "Ausgewählter Teil (M)", "Undo (Ctrl + Z)": "Rückgängig (Strg + Z)",
   // clips
   "Your whole screen, saved whenever something good happens": "Dein ganzer Bildschirm, gespeichert wenn was Gutes passiert",
   "Clip": "Clip", "Recording": "Aufnahme", "Clipping is on": "Clippen ist an", "Clipping is off": "Clippen ist aus", "Long recording": "Lange Aufzeichnung",
@@ -97,6 +103,7 @@ const DE_RULES = [
   [/^Clips older than 3 months(.*)$/, (_, a) => "Clips älter als 3 Monate" + a.replace("items", "Dateien")],
   [/^\.exe \/ \.msi older than 2 weeks, usually already installed(.*)$/, (_, a) => ".exe / .msi älter als 2 Wochen, meist schon installiert" + a.replace("items", "Dateien")],
   [/^Active is (\S+)\. Old: (.*)$/, (_, a, b) => `Aktiv ist ${a}. Alt: ` + b.replace("items", "Ordner")],
+  [/^New length (.+)$/, "Neue Länge $1"], [/^Saving … (\d+)%$/, "Speichert … $1 %"], [/^Could not save the edit\.(.*)$/, "Schnitt konnte nicht gespeichert werden.$1"],
   [/^Drive ([A-Z]:)$/, "Laufwerk $1"], [/^Hold (?!your )(.+) and talk\.$/, "Halte $1 und sprich."],
   [/^Hold your (\w+) mouse button and talk\.$/, (_, b) => `Halte deine ${{ back: "Zurück-Maustaste", forward: "Vorwärts-Maustaste", middle: "mittlere Maustaste" }[b] || b} und sprich.`],
   [/^Saved · ends in (.+)$/, "Gespeichert · endet auf $1"], [/^No microphone access: (.+)$/, "Kein Mikrofonzugriff: $1"], [/^Python not found (.+)$/, "Python nicht gefunden $1"],

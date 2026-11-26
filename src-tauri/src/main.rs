@@ -913,7 +913,7 @@ fn main() {
             autostart_list, autostart_set, autostart_remove, icons, themes, theme_set,
             jarvis_status, jarvis_start, jarvis_save, open_url,
             clips::clips_state, clips::clips_list, clips::clips_config, clips::clips_save, clips::clips_record,
-            clips::clips_delete, clips::clips_copy, clips::clips_show, clips::clips_folder,
+            clips::clips_delete, clips::clips_copy, clips::clips_show, clips::clips_folder, clips::clips_strip, clips::clips_edit, clips::clips_edit_stop,
             first_show, app_autostart, app_lang,
             update::updates_check, update::update_install, update::recorder_install
         ])
