@@ -210,8 +210,11 @@ function push(key, v) {
   hist[key].push(v); if (hist[key].length > HIST) hist[key].shift();
 }
 let hidden = false;      // closed to the tray: no need to measure anything
-T.event.listen("hidden", () => { hidden = true; closePlayer(); });
-T.event.listen("shown", () => { hidden = false; tick(); if (current === "clips") loadClips().catch(console.error); });
+// in the tray or minimized nothing is visible, so all animations stop and the GPU stays idle
+const idle = (on) => document.documentElement.classList.toggle("idle", on);
+document.addEventListener("visibilitychange", () => idle(document.hidden || hidden));
+T.event.listen("hidden", () => { hidden = true; idle(true); closePlayer(); });
+T.event.listen("shown", () => { hidden = false; idle(false); tick(); if (current === "clips") loadClips().catch(console.error); });
 async function tick() {
   if (hidden) return;
   try {
@@ -422,6 +425,7 @@ function jLine(cls, text) {
 }
 function jState(s) {
   jv.state = s;
+  if (s === "listening" || s === "speaking") meter();
   $("#j-orb").classList.toggle("think", s === "thinking");
   $("#j-orb").classList.toggle("rec", s === "listening");
   const ready = jv.status?.running;
@@ -461,7 +465,10 @@ async function jarvisRefresh(autostart) {
 
 /* level meter for the orb (mic while listening, voice while speaking) */
 function audioCtx() { return (jv.ctx ||= new AudioContext()); }
+// runs only while Jarvis listens or speaks, so the idle app does not redraw 60 times a second
 function meter() {
+  if (jv.meterOn) return;
+  jv.meterOn = true;
   const data = new Uint8Array(256);
   const loop = () => {
     let lvl = 0;
@@ -472,6 +479,7 @@ function meter() {
       lvl = Math.min(1, Math.sqrt(sum / data.length) * 4);
     }
     const o = $("#j-orb"), cur = +o.style.getPropertyValue("--lvl") || 0;
+    if (!lvl && cur < 0.003 && jv.state !== "listening" && jv.state !== "speaking") { o.style.setProperty("--lvl", "0"); jv.meterOn = false; return; }
     o.style.setProperty("--lvl", (cur + (lvl - cur) * 0.3).toFixed(3));
     requestAnimationFrame(loop);
   };
@@ -1049,7 +1057,7 @@ setInterval(() => { if (!hidden && (current === "clips" || cs?.recording != null
   try { await loadDisk(); } catch (e) { console.error(e); }
   await tick();
   if (await invoke("first_show")) win.show();
-  else hidden = true;
+  else { hidden = true; idle(true); }
   setInterval(tick, 1500);
   await clipState();
   if (cs && cs.lang !== LANG) return useLang(cs.lang);    // the saved setting wins

@@ -56,24 +56,40 @@ cpu_ghz = None
 
 def freq_worker():
     """Actual CPU clock like Task Manager shows it: base MHz x '% Processor Performance'.
-    Uses Windows' built-in counters through one long-running hidden PowerShell (no extra software)."""
+    Reads Windows' built-in performance counters directly (no PowerShell, no extra software)."""
     global cpu_ghz
-    script = (
-        "while(Get-Process -Id %d -ErrorAction SilentlyContinue){"
-        "$c=Get-CimInstance Win32_PerfFormattedData_Counters_ProcessorInformation | Where-Object { $_.Name -eq '_Total' };"
-        "if($c){ Write-Output ('{0} {1}' -f $c.ProcessorFrequency, $c.PercentProcessorPerformance) };"
-        "Start-Sleep -Seconds 1 }" % os.getpid()
-    )
     try:
-        p = subprocess.Popen(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, creationflags=NO_WINDOW)
-        for line in p.stdout:
-            try:
-                base, pct = line.split()
-                cpu_ghz = float(base) * float(pct) / 100 / 1000
-            except ValueError:
-                pass
+        import ctypes
+        from ctypes import wintypes
+
+        class Value(ctypes.Structure):
+            _fields_ = [("status", wintypes.DWORD), ("value", ctypes.c_double)]
+
+        pdh = ctypes.WinDLL("pdh")
+        handle = ctypes.POINTER(ctypes.c_void_p)
+        pdh.PdhOpenQueryW.argtypes = [wintypes.LPCWSTR, ctypes.c_size_t, handle]
+        pdh.PdhAddEnglishCounterW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR, ctypes.c_size_t, handle]
+        pdh.PdhCollectQueryData.argtypes = [ctypes.c_void_p]
+        pdh.PdhGetFormattedCounterValue.argtypes = [ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p, ctypes.POINTER(Value)]
+        q, freq, perf = ctypes.c_void_p(), ctypes.c_void_p(), ctypes.c_void_p()
+        if pdh.PdhOpenQueryW(None, 0, ctypes.byref(q)):
+            return
+        base = r"\Processor Information(_Total)"
+        if pdh.PdhAddEnglishCounterW(q, base + r"\Processor Frequency", 0, ctypes.byref(freq)) \
+                or pdh.PdhAddEnglishCounterW(q, base + r"\% Processor Performance", 0, ctypes.byref(perf)):
+            return
+        pdh.PdhCollectQueryData(q)
+        v = Value()
+        while True:
+            time.sleep(1)
+            if pdh.PdhCollectQueryData(q):
+                continue
+            if pdh.PdhGetFormattedCounterValue(freq, 0x200, None, ctypes.byref(v)):
+                continue
+            mhz = v.value
+            if pdh.PdhGetFormattedCounterValue(perf, 0x200, None, ctypes.byref(v)):
+                continue
+            cpu_ghz = mhz * v.value / 100 / 1000
     except Exception:
         pass
 

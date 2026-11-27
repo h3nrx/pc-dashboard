@@ -512,3 +512,8 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .ed-len { margin-left: auto; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
 .icon-btn:disabled { opacity: .35; cursor: not-allowed; }
 .ed.busy .ed-tl, .ed.busy .ed-bar > :not(#ed-cancel):not(#ed-save):not(.ed-len) { opacity: .4; pointer-events: none; }
+
+/* nothing on screen (tray / minimized): no animation keeps the GPU busy */
+html.idle *, html.idle *::before, html.idle *::after { animation-play-state: paused !important; }
+html.idle .ambient { display: none; }
+.ambient i { will-change: transform; }

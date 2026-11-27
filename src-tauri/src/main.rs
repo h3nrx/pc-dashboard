@@ -684,6 +684,8 @@ async fn theme_set(id: String, on: bool) -> Result<Vec<Theme>, String> {
 
 const JARVIS_PORT: u16 = 8765;
 static JARVIS_OURS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// the Jarvis process this app started, so it can be stopped without starting any other program
+static JARVIS_CHILD: Mutex<Option<std::process::Child>> = Mutex::new(None);
 
 fn jarvis_dir() -> PathBuf { clips::data().join("jarvis") }
 const JARVIS_FILES: [(&str, &str); 6] = [
@@ -765,8 +767,18 @@ fn jarvis_status_now() -> JarvisStatus {
 #[tauri::command]
 async fn jarvis_status() -> JarvisStatus { blocking(jarvis_status_now).await }
 
+/// stops the Jarvis this app started: a plain system call, safe even while Windows shuts down
+fn jarvis_stop_ours() {
+    if let Some(mut c) = JARVIS_CHILD.lock().unwrap_or_else(|e| e.into_inner()).take() {
+        let _ = c.kill();
+        let _ = c.wait();
+    }
+}
+
 fn jarvis_kill() {
-    // only python processes listening on the Jarvis port
+    jarvis_stop_ours();
+    for _ in 0..10 { if !jarvis_up() { return; } std::thread::sleep(Duration::from_millis(150)); }
+    // a Jarvis from an earlier start: only python processes listening on the Jarvis port
     let _ = run("powershell", &["-NoProfile", "-Command",
         "Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { $p = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; if ($p -and $p.ProcessName -like 'python*') { Stop-Process -Id $p.Id -Force } }"]);
     for _ in 0..20 { if !jarvis_up() { break; } std::thread::sleep(Duration::from_millis(150)); }
@@ -781,7 +793,7 @@ fn jarvis_spawn() -> Result<(), String> {
     let mut ok = false;
     for exe in ["pythonw", "pyw"] {
         match Command::new(exe).arg("monitor.py").current_dir(&dir).creation_flags(NO_WINDOW).spawn() {
-            Ok(_) => { ok = true; break; }
+            Ok(c) => { *JARVIS_CHILD.lock().unwrap_or_else(|e| e.into_inner()) = Some(c); ok = true; break; }
             Err(e) => last = e.to_string(),
         }
     }
@@ -948,9 +960,8 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("PC Dashboard failed to start")
         .run(|_, ev| {
-            // stop Jarvis again if this app started it
-            if let tauri::RunEvent::Exit = ev {
-                if JARVIS_OURS.load(Ordering::SeqCst) { jarvis_kill(); }
-            }
+            // stop Jarvis again if this app started it. No PowerShell here: when Windows shuts down,
+            // new programs can't start any more and waiting for one held up the shutdown.
+            if let tauri::RunEvent::Exit = ev { jarvis_stop_ours(); }
         });
 }
