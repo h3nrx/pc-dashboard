@@ -736,6 +736,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") {
     const key = e.key === "Backspace" ? "" : keyName(e);
     if (key && key === jv.status?.talk) toast("That key already belongs to Jarvis.", true);
+    else if (k._onkey) k._onkey(key);
     else clipSet({ [k.dataset.key]: key });
   }
   k.blur();

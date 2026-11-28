@@ -1,6 +1,6 @@
 # PC Dashboard
 
-A clean Windows dashboard: CPU, RAM and GPU at a glance, screen clips, clean-up, startup apps, several looks and a voice assistant.
+A clean Windows dashboard: CPU, RAM and GPU at a glance, screen clips, a crosshair and ping for games, volume per app, sticky notes, clean-up, startup apps, several looks and a voice assistant.
 
 ## Install
 
@@ -12,12 +12,16 @@ Updates are installed inside the app under **Settings → Updates**. Every downl
 
 ## What's inside
 
+- **Overview:** CPU, memory, GPU and every drive, live.
+- **Gaming:** a crosshair overlay (shape, color, size, gap, outline, hotkey) and a ping list with average, jitter and packet loss. Works in borderless and windowed games.
+- **Sound:** what's playing (Spotify and anything else Windows knows about) with controls, and a volume slider for every app.
 - **Clips:** save the last seconds or record for as long as you like, whole screen with sound, with a simple editor. The recorder ([ffmpeg](https://github.com/GyanD/codexffmpeg), GPL) is downloaded once the first time you turn it on.
-- **Storage:** find junk (always goes to the Recycle Bin) and see big folders.
+- **Storage:** find junk (always goes to the Recycle Bin), see big folders, and sort the Downloads folder by type, with undo.
 - **Startup apps:** see and switch what starts with Windows.
+- **Notes:** sticky notes that stay on top of everything, with colors, checklists and a click-through mode for games.
 - **Jarvis:** voice assistant, needs Python and your own API keys (Groq, optionally ElevenLabs). The keys stay on your PC.
 - **Looks:** Chrome, Winter, Midnight, Ocean, Sakura, Sunset.
-- Hide tabs with a right-click, English and German.
+- The sidebar can shrink to icons, tabs can be hidden with a right-click, English and German.
 
 ## Images
 

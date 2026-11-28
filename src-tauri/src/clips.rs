@@ -86,7 +86,7 @@ pub fn folder() -> PathBuf {
 pub fn german() -> bool { st(|s| s.cfg.lang == "de") }
 pub fn tray() -> bool { st(|s| s.cfg.tray) }
 pub fn start_hidden() -> bool { st(|s| s.cfg.start_hidden) }
-fn ffmpeg() -> PathBuf {
+pub(crate) fn ffmpeg() -> PathBuf {
     let near = std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.join("ffmpeg.exe"))).unwrap_or_default();
     if near.exists() { near } else { data().join("ffmpeg.exe") }
 }
@@ -422,7 +422,7 @@ fn ding(done: bool) {
 }
 
 /* ---------- hotkey ---------- */
-fn parse_key(s: &str) -> Option<(HOT_KEY_MODIFIERS, u32)> {
+pub(crate) fn parse_key(s: &str) -> Option<(HOT_KEY_MODIFIERS, u32)> {
     let (mut m, mut vk) = (HOT_KEY_MODIFIERS(0), None);
     for p in s.split('+') {
         match p {
@@ -543,7 +543,7 @@ pub async fn clips_config(patch: serde_json::Map<String, serde_json::Value>) -> 
         new.quality = new.quality.min(2);
         new.name = new.name.trim().chars().take(20).collect();
         // overview and settings always stay, otherwise you could lock yourself out
-        new.hidden.retain(|h| ["clips", "storage", "autostart", "themes", "jarvis"].contains(&h.as_str()));
+        new.hidden.retain(|h| ["clips", "storage", "autostart", "themes", "jarvis", "gaming", "sound", "notes"].contains(&h.as_str()));
         new.hidden.sort(); new.hidden.dedup();
         let restart = (old.mic, old.fps, old.quality) != (new.mic, new.fps, new.quality);
         let (session, rec) = st(|s| { s.cfg = new; (s.session.clone(), s.rec_wish) });

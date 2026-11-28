@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Fenster-Steuerung fuer die eigene Titelleiste",
-  "windows": ["main"],
+  "description": "Window controls for the custom title bar and the overlay windows",
+  "windows": ["main", "crosshair", "note-*"],
   "permissions": [
     "core:default",
     "core:window:allow-minimize",
@@ -10,6 +10,9 @@
     "core:window:allow-close",
     "core:window:allow-show",
     "core:window:allow-start-dragging",
+    "core:window:allow-start-resize-dragging",
+    "core:window:allow-hide",
+    "core:window:allow-set-ignore-cursor-events",
     "core:window:allow-is-maximized"
   ]
 }

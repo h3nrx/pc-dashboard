@@ -57,6 +57,18 @@
     <symbol id="i-split" viewBox="0 0 24 24"><path d="M12 3v18M7 8l-3 4 3 4M17 8l3 4-3 4"/></symbol>
     <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7 4.5 11.5 9 16"/><path d="M5 11.5h9.5a5 5 0 0 1 0 10H11"/></symbol>
     <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M4.5 18.5v-3M9.5 18.5v-6.5M14.5 18.5v-10M19.5 18.5v-13"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 4.5h14A1.5 1.5 0 0 1 20.5 6v9l-5.5 5.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5z"/><path d="M20.5 15H16.5a1.5 1.5 0 0 0-1.5 1.5v4M7.5 9h9M7.5 12.5h5"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5.5 13.5H12L11 21l7.5-10.5H12z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M17.5 6v12L9 12z" fill="currentColor"/><path d="M6.5 6v12" stroke-width="2.2"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M6.5 6v12L15 12z" fill="currentColor"/><path d="M17.5 6v12" stroke-width="2.2"/></symbol>
+    <symbol id="i-side" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/></symbol>
+    <symbol id="i-show" viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+    <symbol id="i-ghost" viewBox="0 0 24 24"><path d="M6 20V10a6 6 0 0 1 12 0v10l-2-1.6-2 1.6-2-1.6-2 1.6-2-1.6z"/><circle cx="10" cy="10.5" r=".6"/><circle cx="14" cy="10.5" r=".6"/></symbol>
+    <symbol id="i-sort" viewBox="0 0 24 24"><path d="M4 6.5h16M7 12h10M10 17.5h4"/></symbol>
   </defs>
 </svg>
 
@@ -70,18 +82,25 @@
   <aside class="side" data-tauri-drag-region>
     <div class="brand" data-tauri-drag-region>
       <div data-tauri-drag-region><b id="brand"></b><span>Dashboard</span></div>
+      <button class="icon-btn mini-btn" id="side-mini" title="Collapse sidebar"><svg><use href="#i-side"/></svg></button>
     </div>
     <nav>
       <span class="nav-ind" id="nav-ind"></span>
-      <button class="nav active" data-page="overview"><svg><use href="#i-home"/></svg>Overview</button>
-      <button class="nav" data-page="clips"><svg><use href="#i-film"/></svg>Clips<i class="nav-rec" id="nav-rec"></i></button>
-      <button class="nav" data-page="storage"><svg><use href="#i-disk"/></svg>Storage</button>
-      <button class="nav" data-page="autostart"><svg><use href="#i-power"/></svg>Startup apps</button>
-      <button class="nav" data-page="themes"><svg><use href="#i-spark"/></svg>Themes</button>
-      <button class="nav" data-page="settings"><svg><use href="#i-gear"/></svg>Settings<i class="nav-rec" id="nav-upd"></i></button>
+      <button class="nav active" data-page="overview" title="Overview"><svg><use href="#i-home"/></svg><span>Overview</span></button>
+      <div class="nav-group"><span>Games &amp; media</span></div>
+      <button class="nav" data-page="gaming" title="Gaming"><svg><use href="#i-target"/></svg><span>Gaming</span><i class="nav-rec" id="nav-cross"></i></button>
+      <button class="nav" data-page="sound" title="Sound"><svg><use href="#i-volume"/></svg><span>Sound</span></button>
+      <button class="nav" data-page="clips" title="Clips"><svg><use href="#i-film"/></svg><span>Clips</span><i class="nav-rec" id="nav-rec"></i></button>
+      <div class="nav-group"><span>PC</span></div>
+      <button class="nav" data-page="storage" title="Storage"><svg><use href="#i-disk"/></svg><span>Storage</span></button>
+      <button class="nav" data-page="autostart" title="Startup apps"><svg><use href="#i-power"/></svg><span>Startup apps</span></button>
+      <button class="nav" data-page="themes" title="Themes"><svg><use href="#i-spark"/></svg><span>Themes</span></button>
+      <div class="nav-group"><span>Tools</span></div>
+      <button class="nav" data-page="notes" title="Notes"><svg><use href="#i-note"/></svg><span>Notes</span></button>
+      <button class="nav nav-last" data-page="settings" title="Settings"><svg><use href="#i-gear"/></svg><span>Settings</span><i class="nav-rec" id="nav-upd"></i></button>
     </nav>
     <div class="side-foot" data-tauri-drag-region>
-      <div class="up"><svg><use href="#i-clock"/></svg><span>Uptime</span><b id="uptime">–</b></div>
+      <div class="up" title="Uptime"><svg><use href="#i-clock"/></svg><span>Uptime</span><b id="uptime">–</b></div>
     </div>
   </aside>
 
@@ -160,6 +179,58 @@
         </div>
       </section>
 
+      <!-- GAMING -->
+      <section class="page" id="gaming">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Crosshair</h3><p>Sits in the middle of your screen. Works in borderless and windowed games.</p></div>
+            <button class="sw" id="x-on" aria-label="on/off"></button>
+          </div>
+          <div class="xh">
+            <div class="xh-prev" id="x-prev"><svg id="x-svg" viewBox="0 0 120 120"></svg></div>
+            <div class="xh-set">
+              <div class="xs-row"><span class="mo-l">Shape</span><div class="seg" id="x-shape"><button data-v="cross">Cross</button><button data-v="t">T</button><button data-v="x">X</button><button data-v="circle">Circle</button><button data-v="dot">Dot</button></div></div>
+              <div class="xs-row"><span class="mo-l">Color</span><div class="swatches" id="x-colors"></div><input type="color" id="x-color" title="Any color"></div>
+              <div class="xs-row"><span class="mo-l">Size</span><input type="range" class="rng" id="x-size" min="1" max="40" step="1"><b class="rv" id="x-size-v"></b></div>
+              <div class="xs-row"><span class="mo-l">Thickness</span><input type="range" class="rng" id="x-thick" min="1" max="8" step="0.5"><b class="rv" id="x-thick-v"></b></div>
+              <div class="xs-row"><span class="mo-l">Gap</span><input type="range" class="rng" id="x-gap" min="0" max="20" step="1"><b class="rv" id="x-gap-v"></b></div>
+              <div class="xs-row"><span class="mo-l">Opacity</span><input type="range" class="rng" id="x-op" min="0.1" max="1" step="0.05"><b class="rv" id="x-op-v"></b></div>
+              <div class="xs-row"><span class="mo-l">Center dot</span><button class="sw" id="x-dot" aria-label="on/off"></button><span class="mo-l sp">Outline</span><button class="sw" id="x-outline" aria-label="on/off"></button></div>
+              <div class="xs-row"><span class="mo-l">Hotkey</span><button class="keycap" id="x-key" title="Click, then press the new key. Backspace = no key."></button><span class="hint">turns it on and off in game</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div><h3>Ping</h3><p>How fast servers answer, measured every 2 seconds</p></div>
+            <form class="add" id="p-add"><input class="txt" id="p-host" placeholder="Add a server, like 1.1.1.1" spellcheck="false" autocomplete="off"><button class="btn" type="submit"><svg><use href="#i-plus"/></svg>Add</button></form>
+          </div>
+          <div class="list" id="p-list"></div>
+        </div>
+      </section>
+
+      <!-- SOUND -->
+      <section class="page" id="sound">
+        <div class="snd-top">
+          <div class="card np" id="np">
+            <div class="np-art" id="np-art"><svg><use href="#i-music"/></svg></div>
+            <div class="np-main">
+              <span class="np-app" id="np-app">Now playing</span>
+              <b class="np-title raw" id="np-title"></b>
+              <span class="np-artist raw" id="np-artist"></span>
+              <div class="np-bar" id="np-bar"><i id="np-fill"></i></div>
+              <div class="np-row"><span id="np-pos"></span>
+                <div class="np-btns"><button class="icon-btn" id="np-prev" title="Previous"><svg><use href="#i-prev"/></svg></button><button class="icon-btn np-play" id="np-toggle" title="Play / pause"><svg><use href="#i-play"/></svg></button><button class="icon-btn" id="np-next" title="Next"><svg><use href="#i-next"/></svg></button></div>
+                <span id="np-len"></span></div>
+            </div>
+          </div>
+          <div class="card mix">
+            <div class="card-head"><div><h3>Volume</h3><p class="raw" id="v-dev"></p></div></div>
+            <div class="list" id="v-list"><div class="empty"><span class="spin"></span>Loading …</div></div>
+          </div>
+        </div>
+      </section>
+
       <!-- CLIPS -->
       <section class="page" id="clips">
         <div class="card clipbar">
@@ -198,6 +269,17 @@
             <button class="btn chrome" id="clean-btn" disabled><svg><use href="#i-trash"/></svg>Move to Recycle Bin</button>
           </div>
         </div>
+        <div class="card" id="dl">
+          <div class="card-head">
+            <div><h3>Downloads</h3><p>Sorts loose files into folders by type. Unknown files stay where they are.</p></div>
+            <div class="u-btns"><button class="icon-btn" id="dl-open" title="Open folder"><svg><use href="#i-folder"/></svg></button><button class="btn" id="dl-undo" hidden><svg><use href="#i-undo"/></svg>Undo</button><button class="btn chrome" id="dl-sort"><svg><use href="#i-sort"/></svg>Sort now</button></div>
+          </div>
+          <div class="dl-cats" id="dl-cats"></div>
+          <div class="list">
+            <div class="row set"><div class="main"><div class="name">Sort automatically</div><div class="sub">Every 10 minutes. Files that are still downloading are left alone.</div></div><button class="sw" id="dl-auto" aria-label="on/off"></button></div>
+          </div>
+          <div id="dl-old"></div>
+        </div>
         <div class="card">
           <div class="card-head">
             <div><h3>Biggest folders</h3><p>What takes up the most space on C:</p></div>
@@ -229,6 +311,17 @@
         </div>
       </section>
 
+      <!-- NOTES -->
+      <section class="page" id="notes">
+        <div class="card clipbar notes-bar">
+          <button class="btn chrome" id="n-new"><svg><use href="#i-plus"/></svg>New note</button>
+          <div class="cb-state"><b>Click-through</b><span>Notes stay visible, but the mouse goes to the game below</span></div>
+          <button class="keycap" id="n-key" title="Click, then press the new key. Backspace = no key."></button>
+          <button class="sw" id="n-ghost" aria-label="on/off"></button>
+        </div>
+        <div class="note-grid" id="n-grid"></div>
+      </section>
+
       <!-- SETTINGS -->
       <section class="page" id="settings">
         <div class="card">
@@ -251,13 +344,26 @@
             <div class="row set"><div class="main"><div class="name">Save folder</div><div class="sub" id="s-folder"></div></div><button class="btn" id="s-folder-btn"><svg><use href="#i-folder"/></svg>Change</button></div>
           </div>
         </div>
+        <div class="card" id="hotkeys">
+          <div class="card-head"><div><h3>Hotkeys</h3><p>Every key of the app in one place. Click a key, then press the new one. Backspace = no key.</p></div></div>
+          <div class="list">
+            <div class="row set"><div class="main"><div class="name">Save clip</div><div class="sub">Clips</div></div><button class="keycap" data-key="hotkey"></button></div>
+            <div class="row set"><div class="main"><div class="name">Start / stop recording</div><div class="sub">Clips</div></div><button class="keycap" data-key="rec_hotkey"></button></div>
+            <div class="row set"><div class="main"><div class="name">Crosshair on / off</div><div class="sub">Gaming</div></div><button class="keycap" id="s-key-cross"></button></div>
+            <div class="row set"><div class="main"><div class="name">Notes click-through</div><div class="sub">Notes</div></div><button class="keycap" id="s-key-notes"></button></div>
+            <div class="row set"><div class="main"><div class="name">Talk to Jarvis</div><div class="sub">Hold it while you talk</div></div><button class="keycap" id="s-key-jarvis"></button></div>
+          </div>
+        </div>
         <div class="card">
           <div class="card-head"><div><h3>Visible tabs</h3><p>You can also right-click a tab to hide it</p></div></div>
           <div class="list">
+            <div class="row set"><div class="main"><div class="name">Gaming</div><div class="sub">Crosshair and ping</div></div><button class="sw" data-show="gaming" aria-label="show/hide"></button></div>
+            <div class="row set"><div class="main"><div class="name">Sound</div><div class="sub">Now playing and volume per app</div></div><button class="sw" data-show="sound" aria-label="show/hide"></button></div>
             <div class="row set"><div class="main"><div class="name">Clips</div><div class="sub">Save and record your screen</div></div><button class="sw" data-show="clips" aria-label="show/hide"></button></div>
             <div class="row set"><div class="main"><div class="name">Storage</div><div class="sub">Clean up and find big folders</div></div><button class="sw" data-show="storage" aria-label="show/hide"></button></div>
             <div class="row set"><div class="main"><div class="name">Startup apps</div><div class="sub">What launches with Windows</div></div><button class="sw" data-show="autostart" aria-label="show/hide"></button></div>
             <div class="row set"><div class="main"><div class="name">Themes</div><div class="sub">Desktop themes found on this PC</div></div><button class="sw" data-show="themes" aria-label="show/hide"></button></div>
+            <div class="row set"><div class="main"><div class="name">Notes</div><div class="sub">Sticky notes on top of everything</div></div><button class="sw" data-show="notes" aria-label="show/hide"></button></div>
             <div class="row set"><div class="main"><div class="name">Jarvis</div><div class="sub">Voice assistant on the overview</div></div><button class="sw" data-show="jarvis" aria-label="show/hide"></button></div>
           </div>
         </div>
@@ -346,5 +452,7 @@
 <script src="i18n.js"></script>
 <script src="look.js"></script>
 <script src="app.js"></script>
+<script src="xdraw.js"></script>
+<script src="v2.js"></script>
 </body>
 </html>

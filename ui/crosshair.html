@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Crosshair</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; pointer-events: none; }
+  svg { display: block; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<svg id="x" viewBox="0 0 240 240"></svg>
+<script src="xdraw.js"></script>
+<script>
+  const T = window.__TAURI__;
+  const draw = (c) => { document.getElementById("x").innerHTML = crossSVG(c, 240); };
+  T.core.invoke("cross_get").then(draw).catch(() => {});
+  T.event.listen("cross", ({ payload }) => draw(payload));
+</script>
+</body>
+</html>

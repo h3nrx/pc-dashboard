@@ -6,6 +6,12 @@
 mod clips;
 mod gpu;
 mod update;
+mod keys;
+mod audio;
+mod media;
+mod net;
+mod overlay;
+mod downloads;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -927,11 +933,19 @@ fn main() {
             clips::clips_state, clips::clips_list, clips::clips_config, clips::clips_save, clips::clips_record,
             clips::clips_delete, clips::clips_copy, clips::clips_show, clips::clips_folder, clips::clips_strip, clips::clips_edit, clips::clips_edit_stop,
             first_show, app_autostart, app_lang,
-            update::updates_check, update::update_install, update::recorder_install
+            update::updates_check, update::update_install, update::recorder_install,
+            audio::volume_list, audio::volume_set, media::media_now, media::media_cmd, net::ping_hosts,
+            overlay::cross_get, overlay::cross_set, overlay::notes_list, overlay::note_get, overlay::note_new,
+            overlay::note_save, overlay::note_delete, overlay::notes_ghost, overlay::notes_key,
+            downloads::downloads_state, downloads::downloads_sort, downloads::downloads_undo,
+            downloads::downloads_recycle, downloads::downloads_auto, downloads::downloads_open
         ])
         .setup(|app| {
             let h = app.handle().clone();
             clips::start(&h);
+            keys::start(&h);
+            overlay::start(&h);
+            downloads::start();
             migrate_autostart();
             // tray icon: the clipper keeps running when the window is closed
             let open = MenuItem::with_id(app, "open", tray_text(0), true, None::<&str>)?;
@@ -953,9 +967,19 @@ fn main() {
             app.manage(TrayItems(vec![open, save, rec, quit]));
             Ok(())
         })
-        .on_window_event(|w, e| if let tauri::WindowEvent::CloseRequested { api, .. } = e {
-            api.prevent_close();
-            if clips::tray() { let _ = w.hide(); let _ = w.emit("hidden", ()); } else { quit_app(w.app_handle()); }
+        .on_window_event(|w, e| {
+            if w.label() == "main" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = e {
+                    api.prevent_close();
+                    if clips::tray() { let _ = w.hide(); let _ = w.emit("hidden", ()); } else { quit_app(w.app_handle()); }
+                }
+            } else if w.label().starts_with("note-") {
+                match e {
+                    tauri::WindowEvent::CloseRequested { api, .. } => { api.prevent_close(); overlay::note_closed(w); }
+                    tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) => overlay::note_moved(w),
+                    _ => {}
+                }
+            }
         })
         .build(tauri::generate_context!())
         .expect("PC Dashboard failed to start")

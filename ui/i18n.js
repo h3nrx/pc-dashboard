@@ -90,8 +90,48 @@ const DE = {
   "Frames per second": "Bilder pro Sekunde", "60 is smoother, 30 makes smaller files": "60 ist flüssiger, 30 macht kleinere Dateien", "Quality": "Qualität", "Higher looks better but needs more space": "Höher sieht besser aus, braucht aber mehr Platz",
   "Small": "Klein", "Normal": "Normal", "High": "Hoch", "Save folder": "Speicherordner", "Change": "Ändern",
   "Starts with Windows now": "Startet jetzt mit Windows", "Not possible while recording": "Geht nicht während einer Aufnahme",
+  // V2: sidebar
+  "Notes": "Notizen", "Games & media": "Spiele & Medien", "Tools": "Tools", "Themes": "Themes",
+  "Collapse sidebar": "Seitenleiste einklappen", "Expand sidebar": "Seitenleiste ausklappen",
+  "Crosshair and ping": "Fadenkreuz und Ping", "What's playing and the volume of every app": "Was läuft und die Lautstärke jeder App",
+  "Sticky notes that stay on top of everything": "Notizzettel, die über allem bleiben", "Now playing and volume per app": "Läuft gerade und Lautstärke pro App",
+  "Sticky notes on top of everything": "Notizzettel über allem",
+  // V2: gaming
+  "Crosshair": "Fadenkreuz", "Sits in the middle of your screen. Works in borderless and windowed games.": "Sitzt in der Mitte deines Bildschirms. Klappt in Spielen im Fenster- oder randlosen Modus.",
+  "Shape": "Form", "Cross": "Kreuz", "Circle": "Kreis", "Dot": "Punkt", "Color": "Farbe", "Any color": "Beliebige Farbe", "Size": "Größe", "Thickness": "Dicke",
+  "Gap": "Abstand", "Opacity": "Deckkraft", "Center dot": "Mittelpunkt", "Outline": "Umrandung", "turns it on and off in game": "schaltet es im Spiel an und aus",
+  "Crosshair on": "Fadenkreuz an", "Crosshair off": "Fadenkreuz aus", "Invalid color": "Ungültige Farbe", "Invalid value": "Ungültiger Wert",
+  "How fast servers answer, measured every 2 seconds": "Wie schnell Server antworten, alle 2 Sekunden gemessen", "Add a server, like 1.1.1.1": "Server hinzufügen, z. B. 1.1.1.1",
+  "Add": "Hinzufügen", "Remove": "Entfernen", "Add a server to see its ping.": "Füge einen Server hinzu, um seinen Ping zu sehen.", "no answer": "keine Antwort",
+  "That doesn't look like a server address": "Das sieht nicht wie eine Serveradresse aus", "Already in the list": "Schon in der Liste", "12 servers at most": "Höchstens 12 Server",
+  // V2: sound
+  "Now playing": "Läuft gerade", "Nothing is playing": "Gerade läuft nichts", "Start a song in Spotify or anywhere else.": "Starte einen Song in Spotify oder woanders.",
+  "Previous": "Zurück", "Next": "Weiter", "Volume": "Lautstärke", "All sounds": "Alle Sounds", "System sounds": "Systemsounds", "Mute": "Stumm", "Unmute": "Ton an",
+  "No app is playing sound right now.": "Gerade spielt keine App Ton ab.", "Play": "Abspielen",
+  "No key": "Keine Taste", "Another app already uses this key": "Eine andere App benutzt diese Taste schon",
+  "That key is already used in this app.": "Die Taste wird in der App schon benutzt.", "Sound not found": "Sound nicht gefunden",
+  // V2: notes
+  "New note": "Neue Notiz", "Click-through": "Durchklicken", "Notes stay visible, but the mouse goes to the game below": "Notizen bleiben sichtbar, aber die Maus geht ans Spiel darunter",
+  "No notes yet. A new note appears at the top right of your screen.": "Noch keine Notizen. Eine neue Notiz erscheint oben rechts auf dem Bildschirm.",
+  "Empty note": "Leere Notiz", "Hide from screen": "Vom Bildschirm ausblenden", "Show on screen": "Auf dem Bildschirm zeigen", "Delete this note?": "Diese Notiz löschen?",
+  "Notes are not kept in the Recycle Bin, it is gone for good.": "Notizen landen nicht im Papierkorb, sie ist dann endgültig weg.", "just now": "gerade eben",
+  "Notes: click-through on": "Notizen: Durchklicken an", "Notes: click-through off": "Notizen: Durchklicken aus", "That's a lot of notes. Delete one first.": "Das sind viele Notizen. Lösch erst eine.",
+  "Note not found": "Notiz nicht gefunden", "Checklist": "Checkliste", "Color and opacity": "Farbe und Deckkraft", "Hide (it stays in the app)": "Ausblenden (bleibt in der App)", "Write something …": "Schreib etwas …",
+  // V2: hotkeys
+  "Hotkeys": "Tasten", "Every key of the app in one place. Click a key, then press the new one. Backspace = no key.": "Alle Tasten der App an einem Ort. Auf eine Taste klicken, dann die neue drücken. Rücktaste = keine Taste.",
+  "Start / stop recording": "Aufnahme starten / stoppen", "Crosshair on / off": "Fadenkreuz an / aus", "Notes click-through": "Notizen durchklicken",
+  "Talk to Jarvis": "Mit Jarvis sprechen", "Hold it while you talk": "Beim Sprechen gedrückt halten", "Not set up": "Nicht eingerichtet",
+  // V2: downloads
+  "Sorts loose files into folders by type. Unknown files stay where they are.": "Sortiert lose Dateien nach Typ in Ordner. Unbekannte Dateien bleiben, wo sie sind.",
+  "Sort now": "Jetzt sortieren", "Sort automatically": "Automatisch sortieren", "Every 10 minutes. Files that are still downloading are left alone.": "Alle 10 Minuten. Dateien, die noch laden, bleiben unberührt.",
+  "Images": "Bilder", "Music": "Musik", "Documents": "Dokumente", "Archives": "Archive", "Installers": "Installer", "Everything is sorted": "Alles ist sortiert",
+  "Old installers, probably already installed": "Alte Installer, wahrscheinlich schon installiert", "Nothing to sort": "Nichts zu sortieren", "Nothing to undo": "Nichts rückgängig zu machen",
 };
 const DE_RULES = [
+  [/^(· )?avg (\d+) ms · jitter (\d+) ms(?: · (\d+) lost)?$/, (_, a, b, c, d) => `${a || ""}Ø ${b} ms · Schwankung ${c} ms` + (d ? ` · ${d} verloren` : "")],
+  [/^(\d+) days old$/, "$1 Tage alt"],
+  [/^Sorted (\d+) files?$/, (_, n) => `${n} ${n === "1" ? "Datei" : "Dateien"} sortiert`], [/^Put back (\d+) files?$/, (_, n) => `${n} ${n === "1" ? "Datei" : "Dateien"} zurückgelegt`],
+  [/^(\d+) min ago$/, "vor $1 Min."], [/^(\d+) h ago$/, "vor $1 Std."],
   [/^(V[\d.]+) installed$/, "$1 installiert"], [/^(V[\d.]+) is available$/, "$1 ist verfügbar"], [/^(V[\d.]+) is up to date$/, "$1 ist aktuell"],
   [/^Settings could not be saved (.+)$/, "Einstellungen konnten nicht gespeichert werden $1"], [/^Downloading recorder … (\d+)%$/, "Lädt den Rekorder … $1 %"], [/^Last (.+)$/, "Letzte $1"], [/^The app folder is write-protected (.+)$/, "Der App-Ordner ist schreibgeschützt $1"],
   [/^(\d+) on$/, "$1 an"], [/^(\d+) off$/, "$1 aus"], [/^(\d+) leftover$/, "$1 Reste"], [/^(\d+) of (\d+)$/, "$1 von $2"],
@@ -120,7 +160,7 @@ function tr(s) {
 if (LANG === "de") {
   document.documentElement.lang = "de";
   // names of apps, folders and what you said are never touched
-  const skip = "#folder-list .row, .j-line:not(.idle), #auto-list .sub, .app-ic, #p-name, #m-list, #brand, .u-notes, .d-name, script, style";
+  const skip = ".raw, .ping .name, #folder-list .row, .j-line:not(.idle), #auto-list .sub, .app-ic, #p-name, #m-list, #brand, .u-notes, .d-name, script, style";
   const text = (n) => {
     const raw = n.nodeValue, t = raw.trim();
     if (!t || n.parentElement?.closest(skip) || n.parentElement?.matches("#auto-list .name")) return;
