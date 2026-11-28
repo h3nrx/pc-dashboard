@@ -22,7 +22,12 @@ function setMini(on) {
   document.documentElement.classList.toggle("mini", on);
   $("#side-mini").title = on ? "Expand sidebar" : "Collapse sidebar";
   store.set("mini", on);
-  setTimeout(moveIndicator, 320);
+  // the labels shrink at once, so the marker has to follow every frame while the sidebar moves
+  const t0 = performance.now();
+  const ind = $("#nav-ind");
+  ind.style.transition = "none";
+  const follow = () => { moveIndicator(); if (performance.now() - t0 < 400) requestAnimationFrame(follow); else ind.style.transition = ""; };
+  follow();
 }
 $("#side-mini").onclick = () => setMini(!document.documentElement.classList.contains("mini"));
 if (store.get("mini", false)) setMini(true);

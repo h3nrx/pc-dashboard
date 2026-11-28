@@ -66,6 +66,8 @@ const DE = {
   "Type something like 45 s, 2 min or 1:30": "Schreib z. B. 45 s, 2 min oder 1:30", "Between 5 seconds and 10 minutes": "Zwischen 5 Sekunden und 10 Minuten",
   "That key can't be used. Try F9 or Alt + a letter.": "Die Taste geht nicht. Nimm z. B. F9 oder Alt + Buchstabe.", "Clip and recording need different keys.": "Clip und Aufnahme brauchen verschiedene Tasten.",
   "Nothing recorded yet, try again in a few seconds": "Noch nichts aufgenommen, probier es in ein paar Sekunden nochmal", "Not enough free space to record": "Zu wenig Speicherplatz zum Aufnehmen",
+  "The recorder kept failing, so clipping was turned off to keep your PC safe. Switch it on to try again.": "Der Rekorder ist immer wieder ausgefallen, deshalb wurde Clipping zum Schutz deines PCs ausgeschaltet. Schalte es wieder an, um es erneut zu versuchen.",
+  "Almost no space left on the drive, clipping was turned off": "Fast kein Platz mehr auf dem Laufwerk, Clipping wurde ausgeschaltet", "Not enough free space to save the clip": "Zu wenig Speicherplatz, um den Clip zu speichern",
   "Almost no space left, recording stopped": "Fast kein Platz mehr, Aufnahme gestoppt", "The recorder did not start": "Der Rekorder ist nicht gestartet", "That clip is gone": "Den Clip gibt es nicht mehr",
   "The recorder is not installed yet": "Der Rekorder ist noch nicht installiert", "Download the recorder?": "Rekorder herunterladen?", "Recorder installed": "Rekorder installiert",
   "Clips need ffmpeg, a free screen recorder. It is loaded once from GitHub.": "Clips brauchen ffmpeg, einen kostenlosen Rekorder. Er wird einmal von GitHub geladen.",
@@ -130,6 +132,7 @@ const DE = {
 const DE_RULES = [
   [/^(· )?avg (\d+) ms · jitter (\d+) ms(?: · (\d+) lost)?$/, (_, a, b, c, d) => `${a || ""}Ø ${b} ms · Schwankung ${c} ms` + (d ? ` · ${d} verloren` : "")],
   [/^(\d+) days old$/, "$1 Tage alt"],
+  [/^Screen capture stopped, trying again in (\d+) s$/, "Bildschirmaufnahme gestoppt, neuer Versuch in $1 s"],
   [/^Sorted (\d+) files?$/, (_, n) => `${n} ${n === "1" ? "Datei" : "Dateien"} sortiert`], [/^Put back (\d+) files?$/, (_, n) => `${n} ${n === "1" ? "Datei" : "Dateien"} zurückgelegt`],
   [/^(\d+) min ago$/, "vor $1 Min."], [/^(\d+) h ago$/, "vor $1 Std."],
   [/^(V[\d.]+) installed$/, "$1 installiert"], [/^(V[\d.]+) is available$/, "$1 ist verfügbar"], [/^(V[\d.]+) is up to date$/, "$1 ist aktuell"],

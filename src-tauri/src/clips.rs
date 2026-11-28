@@ -28,19 +28,23 @@ const FRAME: u64 = 4; // stereo, 16 bit
 const CHUNK: u64 = RATE * FRAME;
 const MAX_SECS: u32 = 600;
 const MIN_FREE: u64 = 5 << 30;
-const ENCODERS: usize = 4;
+const LOW_DISK: u64 = 2 << 30;          // below this the rolling buffer stops
+const BACKOFF: [u64; 3] = [5, 20, 60];  // seconds between restarts after a failure
+const STRIKES: usize = 3;               // this many failures in 10 minutes turn clipping off
+const LOW: u32 = 0x4000;                // BELOW_NORMAL_PRIORITY_CLASS: games always come first
+const MEM_LIMIT: usize = 2 << 30;       // no ffmpeg may ever use more than this
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 struct Cfg {
     on: bool, secs: u32, mic: bool, hotkey: String, rec_hotkey: String, encoder: usize,
-    fps: u32, quality: usize, sound: bool, folder: String,
+    fps: u32, quality: usize, sound: bool, folder: String, probed: bool,
     lang: String, tray: bool, start_hidden: bool,
     name: String, look: String, fx: bool, hidden: Vec<String>,
 }
 impl Default for Cfg { fn default() -> Self { Cfg {
     on: false, secs: 30, mic: false, hotkey: "F9".into(), rec_hotkey: "F10".into(), encoder: 0,
-    fps: 60, quality: 1, sound: true, folder: String::new(),
+    fps: 60, quality: 1, sound: true, folder: String::new(), probed: false,
     lang: "en".into(), tray: true, start_hidden: true,
     name: String::new(), look: "chrome".into(), fx: true, hidden: vec![],
 } } }
@@ -114,11 +118,46 @@ fn tie_to_app(child: &Child) {
     let job = *JOB.get_or_init(|| unsafe {
         let Ok(j) = CreateJobObjectW(None, PCWSTR::null()) else { return 0 };
         let mut info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
-        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_PROCESS_MEMORY;
+        info.ProcessMemoryLimit = MEM_LIMIT;
         let _ = SetInformationJobObject(j, JobObjectExtendedLimitInformation, &info as *const _ as _, std::mem::size_of_val(&info) as u32);
         j.0 as usize
     });
     if job != 0 { unsafe { let _ = AssignProcessToJobObject(HANDLE(job as _), HANDLE(child.as_raw_handle())); } }
+}
+
+/// waits for a helper process, but never forever
+fn wait_for(mut c: Child, limit: Duration) -> bool {
+    let t = Instant::now();
+    loop {
+        match c.try_wait() { Ok(Some(s)) => return s.success(), Ok(None) => {}, Err(_) => return false }
+        if t.elapsed() > limit { let _ = c.kill(); let _ = c.wait(); return false; }
+        thread::sleep(Duration::from_millis(100));
+    }
+}
+/// finds the video encoder of this PC once, with a one second test picture (not the screen).
+/// Only hardware encoders count; without one the CPU is used, but gently (30 fps).
+fn pick_encoder() -> usize {
+    let tests: [&[&str]; 3] = [&["-c:v", "h264_nvenc", "-preset", "p4"], &["-c:v", "h264_amf"], &["-pix_fmt", "nv12", "-c:v", "h264_qsv"]];
+    for (i, enc) in tests.into_iter().enumerate() {
+        let Ok(c) = Command::new(ffmpeg()).creation_flags(NO_WINDOW | LOW)
+            .args(["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=black:s=1920x1080:r=60", "-t", "1"])
+            .args(enc).args(["-f", "null", "-"])
+            .stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).spawn() else { continue };
+        tie_to_app(&c);
+        if wait_for(c, Duration::from_secs(15)) { return i; }
+    }
+    3
+}
+fn free_space(p: &Path) -> u64 {
+    let d = p.to_string_lossy().chars().next().filter(|c| c.is_ascii_alphabetic()).unwrap_or('C');
+    crate::disk(d.to_ascii_uppercase()).free
+}
+/// turns clipping off with a message instead of trying again and again
+fn pause(why: &str) {
+    st(|x| { x.cfg.on = false; x.rec_wish = false; x.error = why.to_string(); });
+    let _ = save_cfg();
+    emit("state", "");
 }
 
 /* ---------- capture ---------- */
@@ -129,19 +168,22 @@ fn open_session(cfg: &Cfg) -> Result<Session, String> {
     let dir = buffer().join(base.to_string());
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     // stamp every frame with "seconds since base" so sound and picture share one clock
-    let grab = format!("ddagrab=output_idx=0:framerate={}", cfg.fps);
+    // the CPU fallback stays at 30 fps so it never eats the game's frames
+    let cpu = cfg.encoder >= 3;
+    let fps = if cpu { 30 } else { cfg.fps };
+    let grab = format!("ddagrab=output_idx=0:framerate={fps}");
     let q = cfg.quality.min(2);
     let (cq, rate, max) = (["28", "23", "19"][q], ["8M", "14M", "24M"][q], ["12M", "30M", "50M"][q]);
-    let gop = cfg.fps.to_string();
+    let gop = fps.to_string();
     let stamp = format!("setpts='if(eq(N,0),st(0,RTCTIME-{base}),0)*0+PTS-STARTPTS+ld(0)/(TB*1000000)'");
     let (pre, enc): (&str, &[&str]) = match cfg.encoder {
         0 => ("", &["-c:v", "h264_nvenc", "-preset", "p4", "-rc", "vbr", "-cq", cq, "-b:v", "0"]),
         1 => ("", &["-c:v", "h264_amf", "-quality", "balanced", "-b:v", rate]),
         2 => (",hwdownload,format=bgra,format=nv12", &["-c:v", "h264_qsv", "-global_quality", cq]),
-        _ => (",hwdownload,format=bgra,format=yuv420p", &["-c:v", "libx264", "-preset", "ultrafast", "-crf", cq]),
+        _ => (",hwdownload,format=bgra,format=yuv420p", &["-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "4", "-crf", cq]),
     };
     let mut c = Command::new(ffmpeg());
-    c.current_dir(&dir).creation_flags(NO_WINDOW)
+    c.current_dir(&dir).creation_flags(NO_WINDOW | if cpu { LOW } else { 0 })
         .args(["-hide_banner", "-nostats", "-loglevel", "error", "-y", "-init_hw_device", "d3d11va", "-filter_complex"])
         .arg(format!("{grab},{stamp}{pre}"))
         .args(["-fps_mode", "passthrough"]).args(enc)
@@ -243,17 +285,27 @@ fn pieces(s: &Session) -> Vec<(u64, f64, f64)> {
 }
 
 fn supervise() {
-    let (mut fails, mut wait_until, mut next_v, mut next_a, mut tick) = (0u32, Instant::now(), 0u64, 0u64, 0u32);
+    let (mut fails, mut wait_until, mut next_v, mut next_a, mut tick) = (Vec::<Instant>::new(), Instant::now(), 0u64, 0u64, 0u32);
     loop {
         thread::sleep(Duration::from_millis(400));
         tick += 1;
         let (cfg, session, want, quit) = st(|s| (s.cfg.clone(), s.session.clone(), s.cfg.on || s.rec_wish, s.quit));
         if quit { return; }
         match session {
-            None if want && Instant::now() >= wait_until => match open_session(&cfg) {
-                Ok(s) => { next_v = 0; next_a = 0; st(|x| x.session = Some(Arc::new(s))); }
-                Err(e) => { st(|x| x.error = e); wait_until = Instant::now() + Duration::from_secs(5); emit("state", ""); }
-            },
+            None if want && Instant::now() >= wait_until => {
+                if free_space(&buffer()) < LOW_DISK { pause("Almost no space left on the drive, clipping was turned off"); continue; }
+                let mut cfg = cfg;
+                if !cfg.probed && ffmpeg().exists() {
+                    let e = pick_encoder();
+                    st(|x| { x.cfg.encoder = e; x.cfg.probed = true; });
+                    let _ = save_cfg();
+                    (cfg.encoder, cfg.probed) = (e, true);
+                }
+                match open_session(&cfg) {
+                    Ok(s) => { next_v = 0; next_a = 0; st(|x| x.session = Some(Arc::new(s))); }
+                    Err(e) => { st(|x| x.error = e); wait_until = Instant::now() + Duration::from_secs(10); emit("state", ""); }
+                }
+            }
             Some(s) if !want => { if SAVING.load(SeqCst) == 0 { shut(&s); st(|x| x.error.clear()); emit("state", ""); } }
             Some(s) => {
                 let dead = s.child.lock().map(|mut c| !matches!(c.try_wait(), Ok(None))).unwrap_or(true);
@@ -261,21 +313,27 @@ fn supervise() {
                 let newest = list.last().map(|p| p.2);
                 let stuck = tick % 5 == 0 && s.now() - newest.unwrap_or(0.0) > 12.0;
                 if dead || stuck {
-                    let why = fs::read_to_string(s.dir.join("error.txt")).unwrap_or_default();
                     if st(|x| x.rec.is_some()) { finish_recording(&s); }
                     shut(&s);
-                    fails += 1;
-                    // never produced anything: this PC may not have that encoder, try the next one
-                    if newest.is_none() { st(|x| x.cfg.encoder = (x.cfg.encoder + 1) % ENCODERS); }
-                    if fails > ENCODERS as u32 {
-                        st(|x| x.error = format!("Screen capture stopped, retrying. {}", why.lines().last().unwrap_or("")));
-                        emit("state", "");
+                    // never produced anything: check the encoder again before the next try
+                    if newest.is_none() { st(|x| x.cfg.probed = false); }
+                    // a failing recorder is never restarted fast: that is what can hang a graphics driver
+                    let now = Instant::now();
+                    fails.retain(|t| now.duration_since(*t) < Duration::from_secs(600));
+                    fails.push(now);
+                    if fails.len() >= STRIKES {
+                        fails.clear();
+                        pause("The recorder kept failing, so clipping was turned off to keep your PC safe. Switch it on to try again.");
+                        continue;
                     }
-                    wait_until = Instant::now() + Duration::from_secs(if fails > 4 { 5 } else { 1 });
+                    let wait = BACKOFF[(fails.len() - 1).min(BACKOFF.len() - 1)];
+                    st(|x| x.error = format!("Screen capture stopped, trying again in {wait} s"));
+                    emit("state", "");
+                    wait_until = now + Duration::from_secs(wait);
                     continue;
                 }
                 if newest.is_some() {
-                    if fails > 0 || st(|x| !x.error.is_empty()) { fails = 0; st(|x| x.error.clear()); let _ = save_cfg(); emit("state", ""); }
+                    if st(|x| !x.error.is_empty()) { st(|x| x.error.clear()); emit("state", ""); }
                     // forget what is too old, unless a recording still needs it
                     if SAVING.load(SeqCst) == 0 {
                         let keep = st(|x| { let k = s.now() - x.cfg.secs as f64 - 8.0; x.rec.map_or(k, |r| k.min(r - 2.0)) });
@@ -287,7 +345,13 @@ fn supervise() {
                             next_a += 1;
                         }
                     }
-                    if tick % 25 == 0 && st(|x| x.rec.is_some()) && crate::disk('C').free < MIN_FREE {
+                    if tick % 25 == 0 && free_space(&buffer()) < LOW_DISK {
+                        if st(|x| x.rec.is_some()) { finish_recording(&s); }
+                        shut(&s);
+                        pause("Almost no space left on the drive, clipping was turned off");
+                        continue;
+                    }
+                    if tick % 25 == 0 && st(|x| x.rec.is_some()) && free_space(&buffer()) < MIN_FREE {
                         emit("error", "Almost no space left, recording stopped");
                         finish_recording(&s);
                     }
@@ -340,6 +404,7 @@ fn write_clip(s: &Session, from: f64, to: f64, label: &str) -> Result<String, St
     let (Some(first), Some(last)) = (list.first(), list.last()) else { return Err("Nothing recorded yet, try again in a few seconds".into()) };
     let (begin, end) = (first.1, last.2);
     let _ = fs::create_dir_all(folder());
+    if free_space(&folder()) < 1 << 30 { return Err("Not enough free space to save the clip".into()); }
     let mut name = format!("{label} {}.mp4", stamp_name());
     if folder().join(&name).exists() { name = name.replace(".mp4", " (2).mp4"); }
     let mut txt = String::from("ffconcat version 1.0\n");
@@ -351,8 +416,8 @@ fn write_clip(s: &Session, from: f64, to: f64, label: &str) -> Result<String, St
     let concat = s.dir.join(format!("{}.ffconcat", name.replace([' ', '(', ')'], "_")));
     fs::write(&concat, txt).map_err(|e| e.to_string())?;
     let tmp = s.dir.join(format!("{}.part.mp4", name.replace([' ', '(', ')'], "_")));
-    let mut child = Command::new(ffmpeg()).current_dir(&s.dir).creation_flags(NO_WINDOW)
-        .args(["-hide_banner", "-nostats", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i"]).arg(&concat)
+    let mut child = Command::new(ffmpeg()).current_dir(&s.dir).creation_flags(NO_WINDOW | LOW)
+        .args(["-hide_banner", "-nostats", "-loglevel", "error", "-y", "-threads", "2", "-f", "concat", "-safe", "0", "-i"]).arg(&concat)
         .args(["-f", "s16le", "-ar", "48000", "-ac", "2", "-i", "pipe:0", "-map", "0:v", "-map", "1:a",
                "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-colorspace", "bt470bg", "-color_range", "tv", "-movflags", "+faststart"]).arg(&tmp)
         .stdin(Stdio::piped()).stdout(Stdio::null())
@@ -478,7 +543,7 @@ fn find_thumb(st: &str) -> Option<(PathBuf, f64)> {
 }
 fn make_thumb(p: &Path) -> Option<(PathBuf, f64)> {
     let _ = fs::create_dir_all(thumbs());
-    let out = Command::new(ffmpeg()).creation_flags(NO_WINDOW).args(["-hide_banner", "-i"]).arg(p).output().ok()?;
+    let out = Command::new(ffmpeg()).creation_flags(NO_WINDOW | LOW).args(["-hide_banner", "-i"]).arg(p).output().ok()?;
     let txt = String::from_utf8_lossy(&out.stderr).to_string();
     let d = txt.split("Duration: ").nth(1)?.split(',').next()?.to_string();
     let secs = d.split(':').try_fold(0.0, |a, x| x.trim().parse::<f64>().ok().map(|v| a * 60.0 + v))?;
@@ -531,7 +596,7 @@ pub async fn clips_config(patch: serde_json::Map<String, serde_json::Value>) -> 
         let mut v = serde_json::to_value(&old).map_err(|e| e.to_string())?;
         for (k, x) in patch {
             // only known settings; the encoder is picked automatically, the folder has its own dialog
-            if v.get(&k).is_some() && k != "encoder" && k != "folder" { v[k] = x; }
+            if v.get(&k).is_some() && !["encoder", "probed", "folder"].contains(&k.as_str()) { v[k] = x; }
         }
         let mut new: Cfg = serde_json::from_value(v).map_err(|e| e.to_string())?;
         for k in [&new.hotkey, &new.rec_hotkey] {
@@ -546,7 +611,7 @@ pub async fn clips_config(patch: serde_json::Map<String, serde_json::Value>) -> 
         new.hidden.retain(|h| ["clips", "storage", "autostart", "themes", "jarvis", "gaming", "sound", "notes"].contains(&h.as_str()));
         new.hidden.sort(); new.hidden.dedup();
         let restart = (old.mic, old.fps, old.quality) != (new.mic, new.fps, new.quality);
-        let (session, rec) = st(|s| { s.cfg = new; (s.session.clone(), s.rec_wish) });
+        let (session, rec) = st(|s| { if new.on && !old.on { s.error.clear(); } s.cfg = new; (s.session.clone(), s.rec_wish) });
         let saved = save_cfg();
         // these only apply to a fresh buffer (never in the middle of a recording)
         if let (true, false, Some(s)) = (restart, rec, session) { if SAVING.load(SeqCst) == 0 { shut(&s); } }
@@ -658,7 +723,7 @@ pub fn clips_show(name: String) -> Result<(), String> {
 
 /* ---------- simple editor: keep some parts, mute some, save as a new clip ---------- */
 fn probe(p: &Path) -> Option<(f64, bool)> {
-    let out = Command::new(ffmpeg()).creation_flags(NO_WINDOW).args(["-hide_banner", "-i"]).arg(p).output().ok()?;
+    let out = Command::new(ffmpeg()).creation_flags(NO_WINDOW | LOW).args(["-hide_banner", "-i"]).arg(p).output().ok()?;
     let txt = String::from_utf8_lossy(&out.stderr).to_string();
     let d = txt.split("Duration: ").nth(1)?.split(',').next()?.to_string();
     let secs = d.split(':').try_fold(0.0, |a, x| x.trim().parse::<f64>().ok().map(|v| a * 60.0 + v))?;
@@ -675,7 +740,7 @@ pub async fn clips_strip(name: String) -> Result<String, String> {
         if !jpg.exists() {
             let n = 12;
             let vf = format!("fps={:.5},scale=-2:72,tile={n}x1", n as f64 / secs.max(0.5));
-            Command::new(ffmpeg()).creation_flags(NO_WINDOW).args(["-hide_banner", "-loglevel", "error", "-y", "-i"]).arg(&p)
+            Command::new(ffmpeg()).creation_flags(NO_WINDOW | LOW).args(["-hide_banner", "-loglevel", "error", "-y", "-i"]).arg(&p)
                 .args(["-vf", &vf, "-frames:v", "1", "-q:v", "5"]).arg(&jpg).output().map_err(|e| e.to_string())?;
         }
         if jpg.exists() { Ok(jpg.to_string_lossy().to_string()) } else { Err("No preview".into()) }
@@ -717,12 +782,12 @@ pub async fn clips_edit(name: String, parts: Vec<Part>) -> Result<String, String
             2 => &["-c:v", "h264_qsv", "-global_quality", "21"],
             _ => &[],
         };
-        let cpu: &[&str] = &["-c:v", "libx264", "-preset", "veryfast", "-crf", "20"];
+        let cpu: &[&str] = &["-c:v", "libx264", "-preset", "veryfast", "-threads", "4", "-crf", "20"];
         let mut last = String::new();
         for enc in [gpu, cpu] {
             if enc.is_empty() { continue; }
             let mut c = Command::new(ffmpeg());
-            c.creation_flags(NO_WINDOW).args(["-hide_banner", "-nostats", "-loglevel", "error", "-y", "-i"]).arg(&src)
+            c.creation_flags(NO_WINDOW | LOW).args(["-hide_banner", "-nostats", "-loglevel", "error", "-y", "-i"]).arg(&src)
                 .args(["-filter_complex", &fc, "-map", "[v]"]);
             if audio { c.args(["-map", "[a]", "-c:a", "aac", "-b:a", "192k"]); }
             c.args(enc).args(["-pix_fmt", "yuv420p", "-colorspace", "bt470bg", "-color_range", "tv", "-movflags", "+faststart", "-progress", "pipe:1", "-f", "mp4"])
