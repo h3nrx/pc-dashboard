@@ -59,6 +59,7 @@
     <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/></symbol>
     <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M4.5 18.5v-3M9.5 18.5v-6.5M14.5 18.5v-10M19.5 18.5v-13"/></symbol>
+    <symbol id="i-airplay" viewBox="0 0 24 24"><path d="M7 17.5H5A1.5 1.5 0 0 1 3.5 16V5.5A1.5 1.5 0 0 1 5 4h14a1.5 1.5 0 0 1 1.5 1.5V16a1.5 1.5 0 0 1-1.5 1.5h-2"/><path d="M12 14l5 6H7z"/></symbol>
     <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 4.5h14A1.5 1.5 0 0 1 20.5 6v9l-5.5 5.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5z"/><path d="M20.5 15H16.5a1.5 1.5 0 0 0-1.5 1.5v4M7.5 9h9M7.5 12.5h5"/></symbol>
     <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
     <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5.5 13.5H12L11 21l7.5-10.5H12z"/></symbol>
@@ -97,6 +98,7 @@
       <button class="nav" data-page="themes" title="Themes"><svg><use href="#i-spark"/></svg><span>Themes</span></button>
       <div class="nav-group"><span>Tools</span></div>
       <button class="nav" data-page="notes" title="Notes"><svg><use href="#i-note"/></svg><span>Notes</span></button>
+      <button class="nav" data-page="airplay" title="AirPlay"><svg><use href="#i-airplay"/></svg><span>AirPlay</span><i class="nav-rec" id="nav-ap"></i></button>
       <button class="nav nav-last" data-page="settings" title="Settings"><svg><use href="#i-gear"/></svg><span>Settings</span><i class="nav-rec" id="nav-upd"></i></button>
     </nav>
     <div class="side-foot" data-tauri-drag-region>
@@ -322,6 +324,33 @@
         <div class="note-grid" id="n-grid"></div>
       </section>
 
+      <!-- AIRPLAY -->
+      <section class="page" id="airplay">
+        <div class="card clipbar">
+          <div class="cb-state"><b id="a-title">AirPlay is off</b><span id="a-sub"></span></div>
+          <button class="sw" id="a-on" aria-label="on/off"></button>
+        </div>
+        <div class="card ap-stage" id="a-stage">
+          <div class="ap-icon"><i></i><i></i><svg><use href="#i-airplay"/></svg></div>
+          <div class="ap-name" id="a-big">PC Dashboard</div>
+          <div class="ap-pin" id="a-pin-box" hidden><span>Enter this code on your iPad</span><b id="a-code"></b></div>
+          <ol class="ap-how">
+            <li>Open Control Center on your iPad or iPhone</li>
+            <li>Tap Screen Mirroring</li>
+            <li>Pick this PC from the list</li>
+          </ol>
+        </div>
+        <div class="card">
+          <div class="list">
+            <div class="row set"><div class="main"><div class="name">Name of this PC</div><div class="sub">What your iPad shows in the list</div></div><input class="txt" id="a-name" maxlength="30" spellcheck="false" autocomplete="off"></div>
+            <div class="row set"><div class="main"><div class="name">Ask for a code</div><div class="sub">A new device has to enter a 4-digit code once, so nobody else in the Wi-Fi can mirror to this PC</div></div><button class="sw" id="a-pin" aria-label="on/off"></button></div>
+            <div class="row set" id="a-paired-row"><div class="main"><div class="name">Paired devices</div><div class="sub" id="a-paired"></div></div><button class="btn" id="a-forget">Forget all</button></div>
+            <div class="row set"><div class="main"><div class="name">Same Wi-Fi</div><div class="sub">The iPad and this PC have to be in the same network</div></div></div>
+            <div class="row set"><div class="main"><div class="name">Windows Firewall</div><div class="sub">Allow the app when Windows asks the first time, otherwise the iPad can't find it</div></div></div>
+          </div>
+        </div>
+      </section>
+
       <!-- SETTINGS -->
       <section class="page" id="settings">
         <div class="card">
@@ -364,6 +393,7 @@
             <div class="row set"><div class="main"><div class="name">Startup apps</div><div class="sub">What launches with Windows</div></div><button class="sw" data-show="autostart" aria-label="show/hide"></button></div>
             <div class="row set"><div class="main"><div class="name">Themes</div><div class="sub">Desktop themes found on this PC</div></div><button class="sw" data-show="themes" aria-label="show/hide"></button></div>
             <div class="row set"><div class="main"><div class="name">Notes</div><div class="sub">Sticky notes on top of everything</div></div><button class="sw" data-show="notes" aria-label="show/hide"></button></div>
+            <div class="row set"><div class="main"><div class="name">AirPlay</div><div class="sub">Mirror your iPad to this PC</div></div><button class="sw" data-show="airplay" aria-label="show/hide"></button></div>
             <div class="row set"><div class="main"><div class="name">Jarvis</div><div class="sub">Voice assistant on the overview</div></div><button class="sw" data-show="jarvis" aria-label="show/hide"></button></div>
           </div>
         </div>

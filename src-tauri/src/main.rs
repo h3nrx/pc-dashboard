@@ -12,6 +12,7 @@ mod media;
 mod net;
 mod overlay;
 mod downloads;
+mod airplay;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -910,7 +911,7 @@ fn migrate_autostart() {
     }
 }
 
-fn show_main(app: &AppHandle) {
+pub(crate) fn show_main(app: &AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.show(); let _ = w.unminimize(); let _ = w.set_focus(); let _ = w.emit("shown", ());
     }
@@ -918,7 +919,7 @@ fn show_main(app: &AppHandle) {
 pub(crate) fn quit_app(app: &AppHandle) {
     let app = app.clone();
     if let Some(w) = app.get_webview_window("main") { let _ = w.hide(); }
-    std::thread::spawn(move || { clips::stop(); app.exit(0); });
+    std::thread::spawn(move || { airplay::stop(); clips::stop(); app.exit(0); });
 }
 
 fn main() {
@@ -938,7 +939,8 @@ fn main() {
             overlay::cross_get, overlay::cross_set, overlay::notes_list, overlay::note_get, overlay::note_new,
             overlay::note_save, overlay::note_delete, overlay::notes_ghost, overlay::notes_key,
             downloads::downloads_state, downloads::downloads_sort, downloads::downloads_undo,
-            downloads::downloads_recycle, downloads::downloads_auto, downloads::downloads_open
+            downloads::downloads_recycle, downloads::downloads_auto, downloads::downloads_open,
+            airplay::airplay_state, airplay::airplay_set
         ])
         .setup(|app| {
             let h = app.handle().clone();
@@ -946,6 +948,7 @@ fn main() {
             keys::start(&h);
             overlay::start(&h);
             downloads::start();
+            airplay::start(&h);
             migrate_autostart();
             // tray icon: the clipper keeps running when the window is closed
             let open = MenuItem::with_id(app, "open", tray_text(0), true, None::<&str>)?;

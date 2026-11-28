@@ -608,7 +608,7 @@ pub async fn clips_config(patch: serde_json::Map<String, serde_json::Value>) -> 
         new.quality = new.quality.min(2);
         new.name = new.name.trim().chars().take(20).collect();
         // overview and settings always stay, otherwise you could lock yourself out
-        new.hidden.retain(|h| ["clips", "storage", "autostart", "themes", "jarvis", "gaming", "sound", "notes"].contains(&h.as_str()));
+        new.hidden.retain(|h| ["clips", "storage", "autostart", "themes", "jarvis", "gaming", "sound", "notes", "airplay"].contains(&h.as_str()));
         new.hidden.sort(); new.hidden.dedup();
         let restart = (old.mic, old.fps, old.quality) != (new.mic, new.fps, new.quality);
         let (session, rec) = st(|s| { if new.on && !old.on { s.error.clear(); } s.cfg = new; (s.session.clone(), s.rec_wish) });

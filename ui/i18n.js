@@ -119,6 +119,19 @@ const DE = {
   "Notes are not kept in the Recycle Bin, it is gone for good.": "Notizen landen nicht im Papierkorb, sie ist dann endgültig weg.", "just now": "gerade eben",
   "Notes: click-through on": "Notizen: Durchklicken an", "Notes: click-through off": "Notizen: Durchklicken aus", "That's a lot of notes. Delete one first.": "Das sind viele Notizen. Lösch erst eine.",
   "Note not found": "Notiz nicht gefunden", "Checklist": "Checkliste", "Color and opacity": "Farbe und Deckkraft", "Hide (it stays in the app)": "Ausblenden (bleibt in der App)", "Write something …": "Schreib etwas …",
+  // V2.1: airplay
+  "AirPlay": "AirPlay", "Mirror your iPad or iPhone to this PC": "Spiegle dein iPad oder iPhone auf diesen PC", "Mirror your iPad to this PC": "Spiegle dein iPad auf diesen PC",
+  "AirPlay is off": "AirPlay ist aus", "Your device found this PC": "Dein Gerät hat diesen PC gefunden", "Waiting for your iPad": "Wartet auf dein iPad",
+  "Switch it on so your iPad or iPhone can find this PC.": "Schalte es an, damit dein iPad oder iPhone diesen PC findet.",
+  "Mirroring": "Spiegelt", "Connected": "Verbunden", "Connecting …": "Verbindet …", "Shown in Screen Mirroring, in the same Wi-Fi.": "Erscheint unter Bildschirmsynchronisierung, im selben WLAN.",
+  "Open Control Center on your iPad or iPhone": "Öffne das Kontrollzentrum auf deinem iPad oder iPhone", "Tap Screen Mirroring": "Tippe auf Bildschirmsynchronisierung",
+  "Pick this PC from the list": "Wähle diesen PC aus der Liste", "Name of this PC": "Name dieses PCs", "What your iPad shows in the list": "So zeigt ihn dein iPad in der Liste an",
+  "Same Wi-Fi": "Selbes WLAN", "The iPad and this PC have to be in the same network": "iPad und PC müssen im selben Netzwerk sein",
+  "Windows Firewall": "Windows-Firewall", "Allow the app when Windows asks the first time, otherwise the iPad can't find it": "Erlaube die App, wenn Windows beim ersten Mal fragt, sonst findet das iPad sie nicht",
+  "Enter this code on your iPad": "Gib diesen Code auf deinem iPad ein", "Enter the code on your iPad": "Gib den Code auf deinem iPad ein",
+  "Ask for a code": "Nach einem Code fragen", "A new device has to enter a 4-digit code once, so nobody else in the Wi-Fi can mirror to this PC": "Ein neues Gerät muss einmal einen 4-stelligen Code eingeben, damit niemand sonst im WLAN auf diesen PC spiegeln kann",
+  "Paired devices": "Gekoppelte Geräte", "Forget all": "Alle vergessen", "None yet": "Noch keine", "Only once per device": "Nur einmal pro Gerät", "1 device can connect without a code": "1 Gerät kann sich ohne Code verbinden",
+  "The AirPlay port is used by another program": "Der AirPlay-Port wird von einem anderen Programm benutzt", "The name can't be empty": "Der Name darf nicht leer sein",
   // V2: hotkeys
   "Hotkeys": "Tasten", "Every key of the app in one place. Click a key, then press the new one. Backspace = no key.": "Alle Tasten der App an einem Ort. Auf eine Taste klicken, dann die neue drücken. Rücktaste = keine Taste.",
   "Start / stop recording": "Aufnahme starten / stoppen", "Crosshair on / off": "Fadenkreuz an / aus", "Notes click-through": "Notizen durchklicken",
@@ -131,7 +144,8 @@ const DE = {
 };
 const DE_RULES = [
   [/^(· )?avg (\d+) ms · jitter (\d+) ms(?: · (\d+) lost)?$/, (_, a, b, c, d) => `${a || ""}Ø ${b} ms · Schwankung ${c} ms` + (d ? ` · ${d} verloren` : "")],
-  [/^(\d+) days old$/, "$1 Tage alt"],
+  [/^(\d+) days old$/, "$1 Tage alt"], [/^(\d+) devices can connect without a code$/, "$1 Geräte können sich ohne Code verbinden"],
+  [/^Could not reach the network (.+)$/, "Netzwerk nicht erreichbar $1"], [/^Could not announce this PC (.+)$/, "Konnte den PC nicht im Netzwerk anmelden $1"],
   [/^Screen capture stopped, trying again in (\d+) s$/, "Bildschirmaufnahme gestoppt, neuer Versuch in $1 s"],
   [/^Sorted (\d+) files?$/, (_, n) => `${n} ${n === "1" ? "Datei" : "Dateien"} sortiert`], [/^Put back (\d+) files?$/, (_, n) => `${n} ${n === "1" ? "Datei" : "Dateien"} zurückgelegt`],
   [/^(\d+) min ago$/, "vor $1 Min."], [/^(\d+) h ago$/, "vor $1 Std."],

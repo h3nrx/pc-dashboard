@@ -1,6 +1,6 @@
 # PC Dashboard
 
-A clean Windows dashboard: CPU, RAM and GPU at a glance, screen clips, a crosshair and ping for games, volume per app, sticky notes, clean-up, startup apps, several looks and a voice assistant.
+A clean Windows dashboard: CPU, RAM and GPU at a glance, screen clips, a crosshair and ping for games, volume per app, sticky notes, AirPlay mirroring from an iPad or iPhone, clean-up, startup apps, several looks and a voice assistant.
 
 ## Install
 
@@ -19,6 +19,7 @@ Updates are installed inside the app under **Settings → Updates**. Every downl
 - **Storage:** find junk (always goes to the Recycle Bin), see big folders, and sort the Downloads folder by type, with undo.
 - **Startup apps:** see and switch what starts with Windows.
 - **Notes:** sticky notes that stay on top of everything, with colors, checklists and a click-through mode for games.
+- **AirPlay:** mirror an iPad or iPhone to this PC, with sound. Borderless window that turns with the iPad, fullscreen, always on top. A new device enters a 4-digit code once. Both have to be in the same Wi-Fi.
 - **Jarvis:** voice assistant, needs Python and your own API keys (Groq, optionally ElevenLabs). The keys stay on your PC.
 - **Looks:** Chrome, Winter, Midnight, Ocean, Sakura, Sunset.
 - The sidebar can shrink to icons, tabs can be hidden with a right-click, English and German.
@@ -26,3 +27,7 @@ Updates are installed inside the app under **Settings → Updates**. Every downl
 ## Images
 
 All backgrounds are CC0: [Winter](https://www.rawpixel.com/image/5965452/photo-image-christmas-public-domain-nature), [Midnight](https://www.rawpixel.com/image/3282576/free-photo-image-universe-nature-night-sky), [Ocean](https://stocksnap.io/photo/nature-water-NJYSFZJTG7) (Krystian Tambur), [Sakura](https://stocksnap.io/photo/flowers-nature-H0FXPKD55M) (Kristina Paukshtite), [Sunset](https://www.rawpixel.com/image/3302798/free-photo-image-auckland-cc0-cloud).
+
+## License
+
+GPL-3.0, see [LICENSE](LICENSE). The AirPlay mirroring follows [UxPlay](https://github.com/FDH2/UxPlay) and uses its FairPlay code (`src-tauri/playfair`, from RPiPlay / shairplay), which is GPL-3.0 as well.

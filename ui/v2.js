@@ -3,6 +3,7 @@ Object.assign(PAGES, {
   gaming: ["Gaming", () => "Crosshair and ping"],
   sound: ["Sound", () => "What's playing and the volume of every app"],
   notes: ["Notes", () => "Sticky notes that stay on top of everything"],
+  airplay: ["AirPlay", () => "Mirror your iPad or iPhone to this PC"],
 });
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -49,6 +50,7 @@ go = function (page) {
   if (page === "gaming") { crossLoad(); pingTick(); }
   if (page === "sound") { nowTick(); volTick(true); }
   if (page === "notes") notesLoad();
+  if (page === "airplay") apLoad();
   if (page === "storage") dlLoad();
   if (page === "settings") { crossLoad(); notesLoad(); jarvisKey(); }
 };
@@ -347,6 +349,40 @@ $("#dl-undo").onclick = async () => {
 };
 $("#dl-auto").onclick = async () => { if (dl) try { dlShow(await invoke("downloads_auto", { on: !dl.auto })); } catch (e) { toast(String(e), true); } };
 $("#dl-open").onclick = () => invoke("downloads_open");
+
+/* ================= AIRPLAY ================= */
+let ap = null;
+function apShow(s) {
+  ap = s;
+  $("#a-on").classList.toggle("on", s.on);
+  $("#a-stage").classList.toggle("live", s.live);
+  $("#a-big").textContent = s.name;
+  $("#a-stage").classList.toggle("pin", !!s.code);
+  $("#a-pin-box").hidden = !s.code;
+  $("#a-code").textContent = s.code || "";
+  $("#a-pin").classList.toggle("on", s.pin);
+  $("#a-paired-row").hidden = !s.pin;
+  $("#a-paired").textContent = s.paired === 0 ? tr("None yet") : s.paired === 1 ? tr("1 device can connect without a code") : tr(`${s.paired} devices can connect without a code`);
+  $("#a-forget").disabled = !s.paired;
+  if (document.activeElement !== $("#a-name")) $("#a-name").value = s.name;
+  $("#a-title").textContent = !s.on ? tr("AirPlay is off") : s.code ? tr("Enter the code on your iPad") : s.mirroring ? tr("Mirroring") + " · " + s.device : s.device ? tr("Your device found this PC") : s.live ? tr("Waiting for your iPad") : tr("Starting …");
+  $("#a-sub").textContent = s.error || (!s.on ? tr("Switch it on so your iPad or iPhone can find this PC.")
+    : s.code ? tr("Only once per device")
+    : s.mirroring ? (s.size && s.size !== "0 × 0" ? s.size + " · " : "") + tr("Connected")
+    : s.device ? s.device + " · " + tr("Connecting …") : tr("Shown in Screen Mirroring, in the same Wi-Fi."));
+  $("#a-sub").classList.toggle("bad", !!s.error);
+  $("#nav-ap").className = "nav-rec" + (s.live ? " on" : "");
+}
+async function apLoad() { try { apShow(await invoke("airplay_state")); } catch (e) { console.error(e); } }
+async function apSet(patch) { try { apShow(await invoke("airplay_set", patch)); } catch (e) { toast(String(e), true); apLoad(); } }
+$("#a-on").onclick = () => ap && apSet({ on: !ap.on });
+$("#a-pin").onclick = () => ap && apSet({ pin: !ap.pin });
+$("#a-forget").onclick = () => apSet({ forget: true });
+T.event.listen("airplay-pin", () => go("airplay"));
+$("#a-name").onchange = () => apSet({ name: $("#a-name").value });
+$("#a-name").onkeydown = (e) => { if (e.key === "Enter") e.target.blur(); };
+T.event.listen("airplay", () => apLoad());
+apLoad();
 
 /* start: the crosshair dot in the sidebar */
 crossLoad();
