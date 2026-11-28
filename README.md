@@ -1,24 +1,24 @@
 # PC Dashboard
 
-Ein cleanes Windows-Dashboard: Übersicht mit CPU, RAM und Grafikkarte, Bildschirm-Clips, Aufräumen, Autostart, verschiedene Looks und ein Sprachassistent.
+A clean Windows dashboard: CPU, RAM and GPU at a glance, screen clips, clean-up, startup apps, several looks and a voice assistant.
 
-## Installieren
+## Install
 
-1. Unter [Releases](../../releases/latest) die `PC-Dashboard.exe` herunterladen.
-2. In einen festen Ordner legen (z. B. `Dokumente\PC Dashboard`) und starten. Die App liegt danach immer dort.
-3. Windows warnt beim ersten Start eventuell, weil die Datei nicht signiert ist: „Weitere Informationen“ → „Trotzdem ausführen“.
+1. Download `PC-Dashboard.exe` from [Releases](../../releases/latest).
+2. Put it in a fixed folder (for example `Documents\PC Dashboard`) and start it. The app stays there from then on.
+3. Windows may warn on the first start because the file isn't signed: "More info" → "Run anyway".
 
-Updates installierst du in der App unter **Einstellungen → Updates**. Jede Datei wird vorher mit der SHA-256-Prüfsumme von GitHub verglichen.
+Updates are installed inside the app under **Settings → Updates**. Every download is checked against its SHA-256 checksum from GitHub first.
 
-## Was drin ist
+## What's inside
 
-- **Clips:** die letzten Sekunden speichern oder lange aufnehmen, ganzer Bildschirm mit Ton. Der Rekorder ([ffmpeg](https://github.com/GyanD/codexffmpeg), GPL) wird beim ersten Einschalten einmal geladen.
-- **Speicher:** Müll finden (geht immer in den Papierkorb) und große Ordner anzeigen.
-- **Autostart:** sehen und schalten, was mit Windows startet.
-- **Jarvis:** Sprachassistent, braucht Python und eigene API-Keys (Groq, optional ElevenLabs). Die Keys bleiben auf dem PC.
-- **Aussehen:** Chrome, Winter, Mitternacht, Ozean, Sakura, Sonnenuntergang.
-- Tabs per Rechtsklick ausblenden, Deutsch und Englisch.
+- **Clips:** save the last seconds or record for as long as you like, whole screen with sound, with a simple editor. The recorder ([ffmpeg](https://github.com/GyanD/codexffmpeg), GPL) is downloaded once the first time you turn it on.
+- **Storage:** find junk (always goes to the Recycle Bin) and see big folders.
+- **Startup apps:** see and switch what starts with Windows.
+- **Jarvis:** voice assistant, needs Python and your own API keys (Groq, optionally ElevenLabs). The keys stay on your PC.
+- **Looks:** Chrome, Winter, Midnight, Ocean, Sakura, Sunset.
+- Hide tabs with a right-click, English and German.
 
-## Bilder
+## Images
 
-Alle Hintergründe sind CC0: [Winter](https://www.rawpixel.com/image/5965452/photo-image-christmas-public-domain-nature), [Mitternacht](https://www.rawpixel.com/image/3282576/free-photo-image-universe-nature-night-sky), [Ozean](https://stocksnap.io/photo/nature-water-NJYSFZJTG7) (Krystian Tambur), [Sakura](https://stocksnap.io/photo/flowers-nature-H0FXPKD55M) (Kristina Paukshtite), [Sonnenuntergang](https://www.rawpixel.com/image/3302798/free-photo-image-auckland-cc0-cloud).
+All backgrounds are CC0: [Winter](https://www.rawpixel.com/image/5965452/photo-image-christmas-public-domain-nature), [Midnight](https://www.rawpixel.com/image/3282576/free-photo-image-universe-nature-night-sky), [Ocean](https://stocksnap.io/photo/nature-water-NJYSFZJTG7) (Krystian Tambur), [Sakura](https://stocksnap.io/photo/flowers-nature-H0FXPKD55M) (Kristina Paukshtite), [Sunset](https://www.rawpixel.com/image/3302798/free-photo-image-auckland-cc0-cloud).
